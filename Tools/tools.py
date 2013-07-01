@@ -82,4 +82,7 @@ class processSample():
     subPrOutput = subprocess.Popen([command],shell=True,stdout=subprocess.PIPE,env=os.environ)
     subPrOutput.wait()
     errorcode = subPrOutput.returncode
-    print "ERRORCODE ",errorcode  
+    print "ERRORCODE ",errorcode 
+  def end(self):
+    print "deleting tmp cfg ",self.tmpCfg
+    os.remove(self.tmpCfg) 
