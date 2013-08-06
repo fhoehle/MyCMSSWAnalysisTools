@@ -44,33 +44,40 @@ class processSample():
     tmpCfg.write(cfgFileLoaded.process.dumpPython())
     tmpCfg.close()
     self.tmpCfg = tmpCfg.name
-  # create new config, i.e. apply sample specific changes: inputFiles output TFileService MessageLogger
-  def createNewCfg (self,samp,putNewCfgHere,additionalOutputFolder=''):
+  def loadCfg(self,samp):
     self.createTmpCfg()
     import copy
     from os import path
-    tmpCfgFile = open(self.tmpCfg,'r') 
-    tmpCfgFileLoaded = imp.load_source('cfg'+samp.postfix,self.tmpCfg,tmpCfgFile);tmpCfgFile.close()
+    tmpCfgFile = open(self.tmpCfg,'r')
+    self.tmpCfgFileLoaded = imp.load_source('cfg'+samp.postfix,self.tmpCfg,tmpCfgFile);tmpCfgFile.close()
+  # create new config, i.e. apply sample specific changes: inputFiles output TFileService MessageLogger
+  def applyChanges(self,samp,putNewCfgHere,additionalOutputFolder=''):
+    from os import path
+    self.loadCfg(samp)
     #adapt input
-    tmpCfgFileLoaded.process.source.fileNames = samp.getInputfiles();tmpCfgFileLoaded.process.maxEvents.input.setValue(samp.maxEvents)
+    self.tmpCfgFileLoaded.process.source.fileNames = samp.getInputfiles();self.tmpCfgFileLoaded.process.maxEvents.input.setValue(samp.maxEvents)
     additionalOutputFolderFWK = 'file:'+path.realpath(additionalOutputFolder)
     #adapt output
-    for outItem in tmpCfgFileLoaded.process.outputModules.values():
+    for outItem in self.tmpCfgFileLoaded.process.outputModules.values():
         outItem.fileName.setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(outItem.fileName.value(),samp.postfix))[1])
     # TFileService
-    if hasattr(tmpCfgFileLoaded.process,"TFileService"):
-      tmpCfgFileLoaded.process.TFileService.fileName.setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(tmpCfgFileLoaded.process.TFileService.fileName.value(),samp.postfix))[1])
+    if hasattr(self.tmpCfgFileLoaded.process,"TFileService"):
+      self.tmpCfgFileLoaded.process.TFileService.fileName.setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(self.tmpCfgFileLoaded.process.TFileService.fileName.value(),samp.postfix))[1])
     # MessageLogger
-    if hasattr(tmpCfgFileLoaded.process,"MessageLogger"):
-      for dest in tmpCfgFileLoaded.process.MessageLogger.destinations:
-        if hasattr(tmpCfgFileLoaded.process.MessageLogger,dest):
-          if hasattr(getattr(tmpCfgFileLoaded.process.MessageLogger,dest),'filename'): 
-            getattr(getattr(tmpCfgFileLoaded.process.MessageLogger,dest),'filename').setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(getattr(getattr(tmpCfgFileLoaded.process.MessageLogger,dest),'filename').value(),samp.postfix))[1])     
+    if hasattr(self.tmpCfgFileLoaded.process,"MessageLogger"):
+      for dest in self.tmpCfgFileLoaded.process.MessageLogger.destinations:
+        if hasattr(self.tmpCfgFileLoaded.process.MessageLogger,dest):
+          if hasattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename'): 
+            getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').value(),samp.postfix))[1])     
+  # create new file on disk 
+  def createNewCfg (self,samp,putNewCfgHere,additionalOutputFolder=''):
+    from os import path
+    self.applyChanges(samp,putNewCfgHere,additionalOutputFolder)
     # create new cfg
     newCfgFileName= addPostFixToFilename(self.cfgFileName , samp.postfix) 
     newCfgFileName = path.realpath(additionalOutputFolder) + path.sep + path.split(newCfgFileName)[1]
     newCfg = open(newCfgFileName , 'w')
-    newCfg.write(tmpCfgFileLoaded.process.dumpPython())
+    newCfg.write(self.tmpCfgFileLoaded.process.dumpPython())
     print newCfg.name
     newCfg.close()
     self.newCfgName = newCfg.name
