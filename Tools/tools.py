@@ -72,7 +72,8 @@ class processSample():
   # create new file on disk 
   def createNewCfg (self,samp,putNewCfgHere,additionalOutputFolder=''):
     from os import path
-    self.applyChanges(samp,putNewCfgHere,additionalOutputFolder)
+    if not hasattr(self,'tmpCfgFileLoaded') or getattr(self,'tmpCfgFileLoaded') == None:
+      self.applyChanges(samp,putNewCfgHere,additionalOutputFolder)
     # create new cfg
     newCfgFileName= addPostFixToFilename(self.cfgFileName , samp.postfix) 
     newCfgFileName = path.realpath(additionalOutputFolder) + path.sep + path.split(newCfgFileName)[1]
@@ -104,4 +105,7 @@ class processSample():
         os.remove(tbR)
       except OSError:
         pass
- 
+##############
+def getFileMetaInformation(inputFiles):
+ import subprocess,os,json
+ return  json.loads(subprocess.Popen(["edmFileUtil -j "+" ".join(inputFiles)],shell=True,stdout=subprocess.PIPE,env=os.environ).communicate()[0])
