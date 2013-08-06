@@ -31,12 +31,16 @@ class processSample():
     self.cfgFileName = cfgFileName
     self.newCfgName = None
     self.tmpCfg = None
+    from os import getenv
+    self.tmpLocation = os.getenv('PWD')
   def createTmpCfg(self):
     if self.tmpCfg != None:
       return 
     cfgFile = open(self.cfgFileName,'r') #copy.deepcopy(f);f.close()
     cfgFileLoaded = imp.load_source('cfgTMP',self.cfgFileName,cfgFile);cfgFile.close()
-    tmpCfg = open(addPostFixToFilename(self.cfgFileName,'TMP') , 'w')
+    from os import path
+    tmpCfgName = path.split(addPostFixToFilename(self.cfgFileName,'TMP'))[1]
+    tmpCfg = open(tmpCfgName , 'w')
     tmpCfg.write(cfgFileLoaded.process.dumpPython())
     tmpCfg.close()
     self.tmpCfg = tmpCfg.name
@@ -44,26 +48,27 @@ class processSample():
   def createNewCfg (self,samp,putNewCfgHere,additionalOutputFolder=''):
     self.createTmpCfg()
     import copy
+    from os import path
     tmpCfgFile = open(self.tmpCfg,'r') 
     tmpCfgFileLoaded = imp.load_source('cfg'+samp.postfix,self.tmpCfg,tmpCfgFile);tmpCfgFile.close()
     #adapt input
     tmpCfgFileLoaded.process.source.fileNames = samp.getInputfiles();tmpCfgFileLoaded.process.maxEvents.input.setValue(samp.maxEvents)
-    additionalOutputFolder = 'file:'+additionalOutputFolder
+    additionalOutputFolderFWK = 'file:'+path.realpath(additionalOutputFolder)
     #adapt output
     for outItem in tmpCfgFileLoaded.process.outputModules.values():
-        outItem.fileName.setValue(additionalOutputFolder+addPostFixToFilename(outItem.fileName.value(),samp.postfix))
+        outItem.fileName.setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(outItem.fileName.value(),samp.postfix))[1])
     # TFileService
     if hasattr(tmpCfgFileLoaded.process,"TFileService"):
-      tmpCfgFileLoaded.process.TFileService.fileName.setValue(additionalOutputFolder+addPostFixToFilename(tmpCfgFileLoaded.process.TFileService.fileName.value(),samp.postfix))
+      tmpCfgFileLoaded.process.TFileService.fileName.setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(tmpCfgFileLoaded.process.TFileService.fileName.value(),samp.postfix))[1])
     # MessageLogger
     if hasattr(tmpCfgFileLoaded.process,"MessageLogger"):
       for dest in tmpCfgFileLoaded.process.MessageLogger.destinations:
         if hasattr(tmpCfgFileLoaded.process.MessageLogger,dest):
           if hasattr(getattr(tmpCfgFileLoaded.process.MessageLogger,dest),'filename'): 
-            getattr(getattr(tmpCfgFileLoaded.process.MessageLogger,dest),'filename').setValue(additionalOutputFolder+addPostFixToFilename(getattr(getattr(tmpCfgFileLoaded.process.MessageLogger,dest),'filename').value(),samp.postfix))     
+            getattr(getattr(tmpCfgFileLoaded.process.MessageLogger,dest),'filename').setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(getattr(getattr(tmpCfgFileLoaded.process.MessageLogger,dest),'filename').value(),samp.postfix))[1])     
     # create new cfg
     newCfgFileName= addPostFixToFilename(self.cfgFileName , samp.postfix) 
-    newCfgFileName = re.match('.*[^\/]\/([^\/][^\/]*)',newCfgFileName).group(1) if putNewCfgHere else newCfgFileName
+    newCfgFileName = path.realpath(additionalOutputFolder) + path.sep + path.split(newCfgFileName)[1]
     newCfg = open(newCfgFileName , 'w')
     newCfg.write(tmpCfgFileLoaded.process.dumpPython())
     print newCfg.name
@@ -71,14 +76,12 @@ class processSample():
     self.newCfgName = newCfg.name
   # process sample
   def runSample(self,samp,putNewCfgHere,additionalOutputFolder=''):
-    print additionalOutputFolder
     if not additionalOutputFolder == '' and not additionalOutputFolder == None:
-      if additionalOutputFolder.endswith('/'):
-         additionalOutputFolder +='/'  
+      additionalOutputFolder = os.path.realpath(additionalOutputFolder) + os.path.sep
       if os.path.exists(additionalOutputFolder):
         print "Warning folder exists"
       else :
-        os.makedirs(additionalOutputFolder) 
+        os.makedirs(additionalOutputFolder)
     self.createNewCfg (samp,putNewCfgHere,additionalOutputFolder)
     command="cmsRun "+ self.newCfgName +' >& '+self.newCfgName+"_output.log"
     print command,"  outputFolder ",additionalOutputFolder
@@ -87,5 +90,11 @@ class processSample():
     errorcode = subPrOutput.returncode
     print "ERRORCODE ",errorcode 
   def end(self):
-    print "deleting tmp cfg ",self.tmpCfg
-    os.remove(self.tmpCfg) 
+    toBeRemoved = [self.tmpCfg,self.tmpCfg+'c']
+    print "deleting tmp cfg ",self.tmpCfg, " and ",self.tmpCfg+'c'
+    for tbR in toBeRemoved:
+      try:
+        os.remove(tbR)
+      except OSError:
+        pass
+ 
