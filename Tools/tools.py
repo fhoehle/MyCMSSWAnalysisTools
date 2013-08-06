@@ -109,3 +109,18 @@ class processSample():
 def getFileMetaInformation(inputFiles):
  import subprocess,os,json
  return  json.loads(subprocess.Popen(["edmFileUtil -j "+" ".join(inputFiles)],shell=True,stdout=subprocess.PIPE,env=os.environ).communicate()[0])
+## bookKeeping
+class bookKeeping():
+  def __init__(self):
+    self.data = {}
+  def numInputEvts(self,loadedCfg,postfix):
+    inputFilesInfo = getFileMetaInformation(loadedCfg.process.source.fileNames.value())
+    maxInputEvts = sum([f["events"] for f in inputFilesInfo])
+    self.data[postfix] = {"totalEvents":maxInputEvts}
+    maxEvtsProcess = loadedCfg.process.maxEvents.input.value()
+    if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
+      self.data[postfix]["totalEvents"] = maxEvtsProcess
+  def save(self,outputPath):
+    with open(outputPath+'bookKeeping_'+timeStamp+'.json','wb') as bookKeepingFile:
+      json.dump(self.data,bookKeepingFile)
+
