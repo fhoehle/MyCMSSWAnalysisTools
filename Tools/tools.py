@@ -120,7 +120,8 @@ class bookKeeping():
     maxEvtsProcess = loadedCfg.process.maxEvents.input.value()
     if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
       self.data[postfix]["totalEvents"] = maxEvtsProcess
-  def save(self,outputPath):
+  def save(self,outputPath,timeStamp):
+    import json
     with open(outputPath+'bookKeeping_'+timeStamp+'.json','wb') as bookKeepingFile:
       json.dump(self.data,bookKeepingFile)
 
