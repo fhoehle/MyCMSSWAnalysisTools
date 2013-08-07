@@ -124,4 +124,39 @@ class bookKeeping():
     import json
     with open(outputPath+'bookKeeping_'+timeStamp+'.json','wb') as bookKeepingFile:
       json.dump(self.data,bookKeepingFile)
-
+#####
+def createWorkDirCpCfg(wDir,cfg,timeSt):
+  import os,shutil
+  cpCfg = wDir+ os.path.splitext(os.path.basename(cfg))[0]+"_"+timeSt + os.path.splitext(os.path.basename(cfg))[1]
+  os.makedirs(os.path.dirname(cpCfg))
+  shutil.copyfile(cfg,cpCfg)
+  return cpCfg
+####
+def removeAddOptions(toRemove,options):
+  for key in toRemove:
+   options = re.sub(key+'=[^\ ]*','',options)
+  return options
+###
+def compileCfg(cfg,options,addOptions):
+  import os
+  remainingOptions = removeAddOptions(options.keys(),addOptions)
+  if remainingOptions != '' and not remainingOptions.isspace():
+    cfgDumpPython = os.path.splitext(cfg)[0]+"_addedDumpLine"+os.path.splitext(cfg)[1]
+    with open(cfg,"a") as cfgAddLine: 
+      cfgAddLine.write('myTmpFile = open ("'+cfgDumpPython+'","w"); myTmpFile.write(process.dumpPython()); myTmpFile.close() # added by script in order to dump/compile cfg');
+    import subprocess
+    buildFile = subprocess.Popen(["python "+cfg+" "+remainingOptions],shell=True,stdout=subprocess.PIPE,env=os.environ)
+    buildFile.wait()
+    errorcode = buildFile.returncode
+    if errorcode != 0:
+      sys.exit("failed building config with "+str(errorcode))
+      return 
+    else:
+      print "python cfg creation done"
+    return cfgDumpPython
+  else:
+    return cfg
+###
+def getTimeStamp():
+  import datetime,time
+  return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
