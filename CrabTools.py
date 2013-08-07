@@ -40,7 +40,7 @@ crabCfg = {
   ,"GRID":{
     "group" : "dcms"
     #,"role" : "priorityuser"
-    #,"dont_check_proxy":1
+    ,"dont_check_proxy":1
     #,"ce_white_list" : "T2_DE_RWTH"
     #,"se_white_list" : "dcache-se-cms.desy.de"
     #,"ce_black_list" : "T2_DE_RWTH"
@@ -48,14 +48,53 @@ crabCfg = {
     }
 }
 ###
-def writeCrabCfg(crabCfg,crabCfgFilename = "crab.cfg"):
-  cCfg = open(crabCfgFilename,'w')
-  for sec,vals in crabCfg.iteritems():
-    cCfg.write("["+sec+"]");cCfg.write("\n")
-    for k,val in vals.iteritems():
-      cCfg.write(k+"="+str(val));cCfg.write("\n")
-  cCfg.close()
-  return crabCfgFilename
-
-
-
+def checkGridCert():
+  import subprocess,os
+  subPrOutput = subprocess.Popen(["voms-proxy-info -exists"],shell=True,stdout=subprocess.PIPE,env=os.environ)
+  subPrOutput.wait()
+  return subPrOutput.returncode == 0
+###
+class crabProcess():
+  def __init__(self,postfix,cfg,samp,workdir,timeSt,addGridDir=""):
+    self.postfix = postfix
+    self.cfg = cfg
+    self.samp = samp
+    self.workdir = workdir
+    self.timeSt = timeSt 
+    self.addGridDir = addGridDir
+    if not checkGridCert():
+      import sys
+      sys.exit("grid cert not okay, test coms-proxy-init failed")
+  def writeCrabCfg(self):
+    import os
+    cCfg = open(self.crabDir+os.path.sep+"crab.cfg" ,'w')
+    for sec,vals in self.crabCfg.iteritems():
+      cCfg.write("["+sec+"]");cCfg.write("\n")
+      for k,val in vals.iteritems():
+        cCfg.write(k+"="+str(val));cCfg.write("\n")
+    cCfg.close()
+    self.crabCfgFilename = cCfg.name
+    return cCfg.name 
+  ###
+  def createCrabDir(self):
+    import os
+    crabDir = os.path.realpath(self.workdir)+os.path.sep+self.postfix+"_"+self.timeSt
+    os.makedirs(crabDir)
+    self.crabDir = crabDir
+    return crabDir  
+  ##
+  def createCrabCfg(self):
+    tmpCrabCfg = crabCfg
+    tmpCrabCfg["CMSSW"]["pset"]=self.cfg.newCfgName
+    tmpCrabCfg["USER"]["user_remote_dir"] = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") + self.postfix+"_"+self.timeSt
+    self.cfg.setOutputFilesGrid()
+    tmpCrabCfg["CMSSW"]["output_file"] = ",".join(self.cfg.getListOfOutputFiles())
+    tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp.dataset
+    self.crabCfg =tmpCrabCfg
+    return tmpCrabCfg
+  def executeCrabCommand(self,command):
+    import subprocess,os
+    subPrOutput = subprocess.Popen(["cd "+self.crabDir+" && crab "+command],shell=True,stdout=subprocess.PIPE,env=os.environ)
+    subPrOutput.wait()
+    errorcode = subPrOutput.returncode
+    print "ERRORCODE ",errorcode

@@ -10,6 +10,7 @@ class sample():
     self.name = name
     self.postfix = postfix
     self.maxEvents = maxEvents
+    self.dataset = None
     if not isinstance(name,list):
      self.name = [name]
   def getInputfiles(self):
@@ -25,6 +26,16 @@ class sample():
   def intLumi(self):
     if self.numEvts and self.xSec:
       return  self.numEvts/self.xSec
+  def getSampleName(self):
+    import sys,os,re
+    sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'/MyCMSSWAnalysisTools/MyDASTools')
+    import dasTools
+    myDasClient = dasTools.myDasClient()
+    fileIdentifier = re.match('.*([0-9A-Z]{8}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{12}\.root)',self.name[0]).group(1)
+    print "searching dataset for ",fileIdentifier
+    datasets = myDasClient.getDataSetNameForFile("*"+fileIdentifier)
+    print "found ",datasets
+    self.dataset = datasets[0]
 ########################
 class processSample():
   def __init__(self,cfgFileName):
@@ -51,6 +62,22 @@ class processSample():
     tmpCfgFile = open(self.tmpCfg,'r')
     self.tmpCfgFileLoaded = imp.load_source('cfg'+samp.postfix,self.tmpCfg,tmpCfgFile);tmpCfgFile.close()
   # create new config, i.e. apply sample specific changes: inputFiles output TFileService MessageLogger
+  def  setOutputFilesGrid(self):
+    from os import path
+    for outItem in self.tmpCfgFileLoaded.process.outputModules.values():
+      outItem.fileName.setValue(path.basename(outItem.fileName.value()))
+    if hasattr(self.tmpCfgFileLoaded.process,"TFileService"):
+      self.tmpCfgFileLoaded.process.TFileService.fileName.setValue(path.basename(self.tmpCfgFileLoaded.process.TFileService.fileName.value()))
+    print "testing TFileServie set ",self.tmpCfgFileLoaded.process.TFileService.fileName.value()
+  ###
+  def getListOfOutputFiles(self):
+    from os import path
+    outputList = []
+    for outItem in self.tmpCfgFileLoaded.process.outputModules.values():
+      outputList.append(path.basename(outItem.fileName.value()))
+    if hasattr(self.tmpCfgFileLoaded.process,"TFileService"):
+      outputList.append(path.basename(self.tmpCfgFileLoaded.process.TFileService.fileName.value()))
+    return outputList
   def applyChanges(self,samp,putNewCfgHere,additionalOutputFolder=''):
     from os import path
     self.loadCfg(samp)
@@ -82,6 +109,8 @@ class processSample():
     print newCfg.name
     newCfg.close()
     self.newCfgName = newCfg.name
+    print "test self.newCfgName ",self.newCfgName
+    print "testing TFileServie createNewCfg ",self.tmpCfgFileLoaded.process.TFileService.fileName.value()
   # process sample
   def runSample(self,samp,putNewCfgHere,additionalOutputFolder=''):
     if not additionalOutputFolder == '' and not additionalOutputFolder == None:
