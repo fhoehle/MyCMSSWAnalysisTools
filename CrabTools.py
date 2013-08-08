@@ -65,7 +65,7 @@ class crabProcess(object):
     self.__type__="crabProcess"
     if not checkGridCert():
       import sys
-      sys.exit("grid cert not okay, test coms-proxy-init failed")
+      sys.exit("grid cert not okay, test voms-proxy-init failed")
   def writeCrabCfg(self):
     import os
     cCfg = open(self.crabDir+os.path.sep+"crab.cfg" ,'w')
