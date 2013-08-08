@@ -2,8 +2,9 @@
 import FWCore.ParameterSet.Config as cms
 import sys,imp,subprocess,re,os
 def addPostFixToFilename(name,postfix):
-  reName = re.match('(.*[^\.])(\.[^ \.]*)',name)
-  return reName.group(1) + (("_"+postfix) if postfix != "" else "") +reName.group(2)
+  from os import path
+  splittedName = path.splitext(name)
+  return splittedName[0] + (("_"+postfix) if postfix != "" else "") + splittedName[1]
 #########################
 class sample():
   def __init__(self,name,postfix = "",maxEvents=-1):
@@ -37,20 +38,20 @@ class sample():
     print "found ",datasets
     self.dataset = datasets[0]
 ########################
-class processSample():
-  def __init__(self,cfgFileName):
+class processSample(object):
+  def __init__(self,cfgFileName,tmpLoc=""):
     self.cfgFileName = cfgFileName
     self.newCfgName = None
     self.tmpCfg = None
     from os import getenv
-    self.tmpLocation = os.getenv('PWD')
+    self.tmpLocation = os.getenv('PWD') if tmpLoc == "" else tmpLoc
   def createTmpCfg(self):
     if self.tmpCfg != None:
       return 
     cfgFile = open(self.cfgFileName,'r') #copy.deepcopy(f);f.close()
     cfgFileLoaded = imp.load_source('cfgTMP',self.cfgFileName,cfgFile);cfgFile.close()
     from os import path
-    tmpCfgName = path.split(addPostFixToFilename(self.cfgFileName,'TMP'))[1]
+    tmpCfgName = addPostFixToFilename(self.cfgFileName,'TMP')
     tmpCfg = open(tmpCfgName , 'w')
     tmpCfg.write(cfgFileLoaded.process.dumpPython())
     tmpCfg.close()
@@ -68,7 +69,6 @@ class processSample():
       outItem.fileName.setValue(path.basename(outItem.fileName.value()))
     if hasattr(self.tmpCfgFileLoaded.process,"TFileService"):
       self.tmpCfgFileLoaded.process.TFileService.fileName.setValue(path.basename(self.tmpCfgFileLoaded.process.TFileService.fileName.value()))
-    print "testing TFileServie set ",self.tmpCfgFileLoaded.process.TFileService.fileName.value()
   ###
   def getListOfOutputFiles(self):
     from os import path
@@ -106,11 +106,8 @@ class processSample():
     newCfgFileName = path.realpath(additionalOutputFolder) + path.sep + path.split(newCfgFileName)[1]
     newCfg = open(newCfgFileName , 'w')
     newCfg.write(self.tmpCfgFileLoaded.process.dumpPython())
-    print newCfg.name
     newCfg.close()
     self.newCfgName = newCfg.name
-    print "test self.newCfgName ",self.newCfgName
-    print "testing TFileServie createNewCfg ",self.tmpCfgFileLoaded.process.TFileService.fileName.value()
   # process sample
   def runSample(self,samp,putNewCfgHere,additionalOutputFolder=''):
     if not additionalOutputFolder == '' and not additionalOutputFolder == None:

@@ -54,7 +54,7 @@ def checkGridCert():
   subPrOutput.wait()
   return subPrOutput.returncode == 0
 ###
-class crabProcess():
+class crabProcess(object):
   def __init__(self,postfix,cfg,samp,workdir,timeSt,addGridDir=""):
     self.postfix = postfix
     self.cfg = cfg
@@ -62,6 +62,7 @@ class crabProcess():
     self.workdir = workdir
     self.timeSt = timeSt 
     self.addGridDir = addGridDir
+    self.__type__="crabProcess"
     if not checkGridCert():
       import sys
       sys.exit("grid cert not okay, test coms-proxy-init failed")
@@ -79,22 +80,44 @@ class crabProcess():
   def createCrabDir(self):
     import os
     crabDir = os.path.realpath(self.workdir)+os.path.sep+self.postfix+"_"+self.timeSt
-    os.makedirs(crabDir)
+    if not os.path.isdir(crabDir):
+      os.makedirs(crabDir)
     self.crabDir = crabDir
     return crabDir  
   ##
-  def createCrabCfg(self):
+  def createCrabCfg(self,outputFileList = None):
     tmpCrabCfg = crabCfg
-    tmpCrabCfg["CMSSW"]["pset"]=self.cfg.newCfgName
+    tmpCrabCfg["CMSSW"]["pset"]=self.cfg
     tmpCrabCfg["USER"]["user_remote_dir"] = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") + self.postfix+"_"+self.timeSt
-    self.cfg.setOutputFilesGrid()
-    tmpCrabCfg["CMSSW"]["output_file"] = ",".join(self.cfg.getListOfOutputFiles())
-    tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp.dataset
+    #self.cfg.setOutputFilesGrid()
+    if outputFileList == None:
+      tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
+    else:
+      tmpCrabCfg["CMSSW"]["output_file"] = ",".join(outputFileList)
+    tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp
     self.crabCfg =tmpCrabCfg
     return tmpCrabCfg
-  def executeCrabCommand(self,command):
+  def executeCrabCommand(self,command,debug = False):
+    if not hasattr(self,'crabDir'):
+      self.createCrabDir()
     import subprocess,os
     subPrOutput = subprocess.Popen(["cd "+self.crabDir+" && crab "+command],shell=True,stdout=subprocess.PIPE,env=os.environ)
     subPrOutput.wait()
     errorcode = subPrOutput.returncode
+    out,err = subPrOutput.communicate()
+    print out
     print "ERRORCODE ",errorcode
+    if debug:
+      print err
+def saveCrabProp(crabP,jsonFilename):
+    import json
+    with open (jsonFilename,'wb') as f:
+      json.dump(crabP.__dict__,f)
+def loadCrabProp(jsonFilename):
+    import json
+    def objD(obj):
+      if '__type__' in obj and obj['__type__'] == 'crabProcess':
+        return crabProcess(obj['postfix'],obj['cfg'],obj['samp'],obj['workdir'],obj['timeSt'],obj['addGridDir'])
+      return obj
+    with open(jsonFilename , 'rb') as jsonFile:
+      return json.load(jsonFile,object_hook=objD)
