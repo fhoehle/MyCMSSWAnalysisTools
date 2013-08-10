@@ -64,11 +64,11 @@ class crabProcess(object):
     self.addGridDir = addGridDir
     self.__type__="crabProcess"
     self.checkRequirements()
-  def checkRequirements():
+  def checkRequirements(self):
     import sys,os
     if not checkGridCert():
       sys.exit("grid cert not okay, test voms-proxy-init failed")
-    if not os.einviron.has_key("CRABDIR"):
+    if not os.environ.has_key("CRABDIR"):
       sys.exit("crab not found")
   def writeCrabCfg(self):
     import os
