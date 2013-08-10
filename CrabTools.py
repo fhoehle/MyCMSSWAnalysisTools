@@ -141,14 +141,34 @@ class crabProcess(object):
   def automaticResubmit(self):
     import re
     jobOutput = [ l for l in self.executeCrabCommand("-status",False,True) if re.match('^[0-9]+[ \t]+[YN][ \t]+[a-zA-Z]+[ \t]+',l)]
-    doneJobsGood = [j.split()[0] for j in jobOutput if j.split()[2] == "Done" and j.split()[5] == "0" ]
-    doneJobsBad = [j.split()[0] for j in jobOutput if j.split()[2] == "Done" and j.split()[5] != "0" ]
-    abortedJobs = [j.split()[0] for j in jobOutput if j.split()[2] == "Aborted"  ]
-    doneJobsBad.extend(abortedJobs)
+    doneJobsGood = []; doneJobsBad = []; abortedJobs = []; downloadableJobs = []; downloadedJobsBad = [];downloadableNoCodeJobs=[]
+    for j in jobOutput:
+      jSplit = j.split()
+      if  len(jSplit) > 5:
+        if jSplit[2] == "Retrieved" and jSplit[5] == "0":
+          doneJobsGood.append(jSplit[0])
+        if jSplit[2] == "Retrieved" and jSplit[5] != "0":
+          downloadedJobsBad.append(jSplit[0])
+        if jSplit[2] == "Done" and jSplit[5] != "0":
+          doneJobsBad.append(jSplit[0]) 
+      if jSplit[2] == "Aborted":
+        abortedJobs.append(jSplit[0])
+      if len(jSplit) > 5 and jSplit[2]  == "Done" and jSplit[3]  == "Terminated" and jSplit[5] == "0": 
+        downloadableJobs.append(jSplit[0])
+      if  len(jSplit) < 5 and len(jSplit) > 2 and jSplit[2]  == "Done" and jSplit[3]  == "Terminated" :
+        downloadableNoCodeJobs.append(jSplit[0])
+    print " downloadableJobs ",downloadableJobs
+    #doneJobsBad.extend(abortedJobs)
+    print "doneJobsGood ",doneJobsGood
+    print "doneJobsBad ", doneJobsBad 
+    print "abortedJobs ",abortedJobs
+    print "downloadedJobsBad ",downloadedJobsBad
+    print "downloadableNoCodeJobs", downloadableNoCodeJobs
+    if len(doneJobsBad+downloadableJobs+downloadableNoCodeJobs):
+      self.executeCrabCommand("-get "+",".join(doneJobsBad+downloadableJobs+downloadableNoCodeJobs),True)
     print "resubmitting ",
-    if len(doneJobsBad) > 0:
-      self.executeCrabCommand("-get "+",".join(doneJobsBad),True)
-      self.executeCrabCommand("-resubmit "+",".join(doneJobsBad),True)
+    if len(doneJobsBad+downloadedJobsBad+abortedJobs) > 0:
+      self.executeCrabCommand("-resubmit "+",".join(doneJobsBad+downloadedJobsBad+abortedJobs),True)
   def getAcGridDir(self):
     import os,subprocess
     if self.crabCfg["USER"].has_key("user_remote_dir"):
