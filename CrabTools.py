@@ -44,7 +44,7 @@ crabCfg = {
     #,"ce_white_list" : "T2_DE_RWTH"
     #,"se_white_list" : "dcache-se-cms.desy.de"
     #,"ce_black_list" : "T2_DE_RWTH"
-    #,"se_black_list" : "dcache-se-cms.desy.de"
+    ,"se_black_list" : "T2_TW_Taiwan"
     }
 }
 ###
@@ -92,23 +92,75 @@ class crabProcess(object):
     #self.cfg.setOutputFilesGrid()
     if outputFileList == None:
       tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
+      tmpCrabCfg["CMSSW"].pop("output_file",None)
     else:
       tmpCrabCfg["CMSSW"]["output_file"] = ",".join(outputFileList)
     tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp
     self.crabCfg =tmpCrabCfg
     return tmpCrabCfg
-  def executeCrabCommand(self,command,debug = False):
+  def executeCrabCommand(self,command,debug = False,returnOutput = False):
     if not hasattr(self,'crabDir'):
       self.createCrabDir()
-    import subprocess,os
-    subPrOutput = subprocess.Popen(["cd "+self.crabDir+" && crab "+command],shell=True,stdout=subprocess.PIPE,env=os.environ)
-    subPrOutput.wait()
-    errorcode = subPrOutput.returncode
-    out,err = subPrOutput.communicate()
-    print out
-    print "ERRORCODE ",errorcode
+    import subprocess,os,sys
+    command = "cd "+self.crabDir+" && crab "+command+' ; echo "stopKeyDONE"'
     if debug:
-      print err
+      print "executing command ",command
+    subPrOutput = subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
+    subPStdOut = []
+    for line in iter(subPrOutput.stdout.readline,"stopKeyDONE\n"):
+      if debug:
+        print line
+      subPStdOut.append(line)
+    subPrOutput.stdout.close()
+    if not debug:
+      print "\n".join(subPStdOut)
+    if not returnOutput:
+      print "ERRORCODE ",subPrOutput.returncode
+    else:
+      return subPStdOut
+  def status(self):
+    self.executeCrabCommand("-status",debug = True)
+  def getoutput(self):
+    self.executeCrabCommand("-getoutput",debug = True)
+  def submit(self):
+    output = self.executeCrabCommand("-status",False,True)
+    import re
+    numJobs = len([ l for l in output if re.match('^[0-9]+[ \t]+[YN][ \t]+[a-zA-Z]+[ \t]+',l)])
+    if numJobs > 500:
+      print "submitting ",numJobs," jobs"
+      import time
+      for i in range(numJobs/500):
+        print "submitting block ",i
+        self.executeCrabCommand("-submit "+str(i*500+1)+"-"+str((i+1)*500),True)
+    else:
+      self.executeCrabCommand("-submit ",True)
+  def automaticResubmit(self):
+    import re
+    jobOutput = [ l for l in self.executeCrabCommand("-status",False,True) if re.match('^[0-9]+[ \t]+[YN][ \t]+[a-zA-Z]+[ \t]+',l)]
+    doneJobsGood = [j.split()[0] for j in jobOutput if j.split()[2] == "Done" and j.split()[5] == "0" ]
+    doneJobsBad = [j.split()[0] for j in jobOutput if j.split()[2] == "Done" and j.split()[5] != "0" ]
+    abortedJobs = [j.split()[0] for j in jobOutput if j.split()[2] == "Aborted"  ]
+    doneJobsBad.extend(abortedJobs)
+    print "resubmitting ",
+    if len(doneJobsBad) > 0:
+      self.executeCrabCommand("-get "+",".join(doneJobsBad),True)
+      self.executeCrabCommand("-resubmit "+",".join(doneJobsBad),True)
+  def getAcGridDir(self):
+    import os,subprocess
+    if self.crabCfg["USER"].has_key("user_remote_dir"):
+      return '/pnfs/physik.rwth-aachen.de/cms/store/user/fhohle/'+self.crabCfg["USER"]["user_remote_dir"]
+    else:
+      return None
+def commandAcGridFolder(command,gridFolder):
+    import subprocess,os,sys
+    command = 'uberftp grid-ftp " '+command+" "+gridFolder+'" ; echo "DONE"'
+    subPrOutput = subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
+    for line in iter(subPrOutput.stdout.readline,"DONE\n"):
+      print line
+    subPrOutput.stdout.close()
+def removeGridFolderCrab(cJ):
+  commandAcGridFolder("rm ",cJ.getAcGridDir().rstrip("/")+"/*")
+  commandAcGridFolder("rmdir ",cJ.getAcGridDir().rstrip("/"))
 def saveCrabProp(crabP,jsonFilename):
     import json
     with open (jsonFilename,'wb') as f:
@@ -119,5 +171,9 @@ def loadCrabProp(jsonFilename):
       if '__type__' in obj and obj['__type__'] == 'crabProcess':
         return crabProcess(obj['postfix'],obj['cfg'],obj['samp'],obj['workdir'],obj['timeSt'],obj['addGridDir'])
       return obj
+    cP = None
     with open(jsonFilename , 'rb') as jsonFile:
-      return json.load(jsonFile,object_hook=objD)
+      cP = json.load(jsonFile,object_hook=objD)
+    with open(jsonFilename , 'rb') as jsonFile:
+      cP.__dict__ = json.load(jsonFile)
+    return cP
