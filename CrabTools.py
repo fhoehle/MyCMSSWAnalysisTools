@@ -116,8 +116,6 @@ class crabProcess(object):
         print line
       subPStdOut.append(line)
     subPrOutput.stdout.close()
-    if not debug:
-      print "\n".join(subPStdOut)
     if not returnOutput:
       print "ERRORCODE ",subPrOutput.returncode
     else:
@@ -138,7 +136,7 @@ class crabProcess(object):
         self.executeCrabCommand("-submit "+str(i*500+1)+"-"+str((i+1)*500),True)
     else:
       self.executeCrabCommand("-submit ",True)
-  def automaticResubmit(self):
+  def automaticResubmit(self,onlySummary = False):
     import re
     jobOutput = [ l for l in self.executeCrabCommand("-status",False,True) if re.match('^[0-9]+[ \t]+[YN][ \t]+[a-zA-Z]+[ \t]+',l)]
     doneJobsGood = []; doneJobsBad = []; abortedJobs = []; downloadableJobs = []; downloadedJobsBad = [];downloadableNoCodeJobs=[]
@@ -157,18 +155,23 @@ class crabProcess(object):
         downloadableJobs.append(jSplit[0])
       if  len(jSplit) < 5 and len(jSplit) > 2 and jSplit[2]  == "Done" and jSplit[3]  == "Terminated" :
         downloadableNoCodeJobs.append(jSplit[0])
-    print " downloadableJobs ",downloadableJobs
-    #doneJobsBad.extend(abortedJobs)
-    print "doneJobsGood ",doneJobsGood
-    print "doneJobsBad ", doneJobsBad 
-    print "abortedJobs ",abortedJobs
-    print "downloadedJobsBad ",downloadedJobsBad
-    print "downloadableNoCodeJobs", downloadableNoCodeJobs
+    if not onlySummary:
+      print " downloadableJobs ",downloadableJobs
+      print "doneJobsGood ",doneJobsGood
+      print "doneJobsBad ", doneJobsBad 
+      print "abortedJobs ",abortedJobs
+      print "downloadedJobsBad ",downloadedJobsBad
+      print "downloadableNoCodeJobs", downloadableNoCodeJobs
     if len(doneJobsBad+downloadableJobs+downloadableNoCodeJobs):
-      self.executeCrabCommand("-get "+",".join(doneJobsBad+downloadableJobs+downloadableNoCodeJobs),True)
-    print "resubmitting ",
+      self.executeCrabCommand("-get "+",".join(doneJobsBad+downloadableJobs+downloadableNoCodeJobs),debug = True and not onlySummary )
     if len(doneJobsBad+downloadedJobsBad+abortedJobs) > 0:
-      self.executeCrabCommand("-resubmit "+",".join(doneJobsBad+downloadedJobsBad+abortedJobs),True)
+      self.executeCrabCommand("-resubmit "+",".join(doneJobsBad+downloadedJobsBad+abortedJobs),debug = True and not onlySummary)
+    if onlySummary:
+      print "CrabJob ",self.postfix
+      print "jobs done/retrieved good ",",".join(doneJobsGood+downloadableJobs)
+      print len(doneJobsGood+downloadableJobs),"/",len(jobOutput)
+      print "jobs resubmitted ",",".join(doneJobsBad+downloadedJobsBad+abortedJobs)
+      print "just downloaded ",",".join(downloadableNoCodeJobs)
   def getAcGridDir(self):
     import os,subprocess
     if self.crabCfg["USER"].has_key("user_remote_dir"):

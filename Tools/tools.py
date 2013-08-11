@@ -6,64 +6,65 @@ def addPostFixToFilename(name,postfix):
   splittedName = path.splitext(name)
   return splittedName[0] + (("_"+postfix) if postfix != "" else "") + splittedName[1]
 #########################
-class sample():
-  def __init__(self,name,postfix = "",maxEvents=-1):
-    self.name = name
+class sample(object):
+  def __init__(self,filenames,label,xSec,postfix = "",maxEvents=-1,dataset = None):
+    self.filenames = filenames
     self.postfix = postfix
+    self.label = label
+    self.xSec = float(xSec)
     self.maxEvents = maxEvents
-    self.dataset = None
-    if not isinstance(name,list):
-     self.name = [name]
+    self.dataset = dataset
+    if not isinstance(filenames,list):
+     self.filenames = [filenames]
   def getInputfiles(self):
-    inputFiles = cms.untracked.vstring([f for f in self.name if f.startswith('file:/') or  f.startswith('/store/')])
-    if len(self.name) == len(inputFiles):
+    inputFiles = cms.untracked.vstring([f for f in self.filenames if f.startswith('file:/') or  f.startswith('/store/')])
+    if len(self.filenames) == len(inputFiles):
       return inputFiles
     else:
       sys.exit('inputFiles not okay')
-  def xSec(self,xSec):
-    self.xSec = float(xSec)
-  def numEvts(self,numEvts):
-    self.numEvts=float(numEvts)
-  def intLumi(self):
-    if self.numEvts and self.xSec:
-      return  self.numEvts/self.xSec
-  def getSampleName(self):
-    import sys,os,re
-    sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'/MyCMSSWAnalysisTools/MyDASTools')
-    import dasTools
-    myDasClient = dasTools.myDasClient()
-    fileIdentifier = re.match('.*([0-9A-Z]{8}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{12}\.root)',self.name[0]).group(1)
-    print "searching dataset for ",fileIdentifier
-    datasets = myDasClient.getDataSetNameForFile("*"+fileIdentifier)
-    print "found ",datasets
-    self.dataset = datasets[0]
+  def setDataset(self):
+    self.dataset = getDatasetName(self)
+####################
+def getDatasetName(sample):
+  import sys,os,re
+  sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'/MyCMSSWAnalysisTools/MyDASTools')
+  import dasTools
+  myDasClient = dasTools.myDasClient()
+  fileIdentifier = re.match('.*([0-9A-Z]{8}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{12}\.root)',sample.filenames[0]).group(1)
+  print "searching dataset for ",fileIdentifier
+  datasets = myDasClient.getDataSetNameForFile("*"+fileIdentifier)
+  print "found ",datasets
+  return datasets[0]
 ########################
 class processSample(object):
-  def __init__(self,cfgFileName,tmpLoc=""):
+  def __init__(self,cfgFileName):
     self.cfgFileName = cfgFileName
     self.newCfgName = None
     self.tmpCfg = None
-    from os import getenv
-    self.tmpLocation = os.getenv('PWD') if tmpLoc == "" else tmpLoc
+    from os import getenv,path
+#    self.workLoc = os.getenv('PWD') if workLoc == "" else workLoc
+#    from os import path
+    self.workLoc = path.dirname(self.cfgFileName) + path.sep
   def createTmpCfg(self):
     if self.tmpCfg != None:
+      print "tmpCfg already exists ",self.tmpCfg 
       return 
     cfgFile = open(self.cfgFileName,'r') #copy.deepcopy(f);f.close()
     cfgFileLoaded = imp.load_source('cfgTMP',self.cfgFileName,cfgFile);cfgFile.close()
     from os import path
-    tmpCfgName = addPostFixToFilename(self.cfgFileName,'TMP')
+    tmpCfgName = addPostFixToFilename(self.cfgFileName,'_compiledInputCfg_TMP')
     tmpCfg = open(tmpCfgName , 'w')
     tmpCfg.write(cfgFileLoaded.process.dumpPython())
     tmpCfg.close()
     self.tmpCfg = tmpCfg.name
-  def loadCfg(self,samp):
-    self.createTmpCfg()
+  def loadTmpCfg(self):
+    if not hasattr(self,'tmpCfg') or self.tmpCfg == None:
+      self.createTmpCfg()
     import copy
     from os import path
     tmpCfgFile = open(self.tmpCfg,'r')
-    self.tmpCfgFileLoaded = imp.load_source('cfg'+samp.postfix,self.tmpCfg,tmpCfgFile);tmpCfgFile.close()
-  # create new config, i.e. apply sample specific changes: inputFiles output TFileService MessageLogger
-  def  setOutputFilesGrid(self):
+    self.tmpCfgFileLoaded = imp.load_source('tmpCfg_loaded',self.tmpCfg,tmpCfgFile);tmpCfgFile.close()
+  def setOutputFilesGrid(self):
     from os import path
     for outItem in self.tmpCfgFileLoaded.process.outputModules.values():
       outItem.fileName.setValue(path.basename(outItem.fileName.value()))
@@ -78,47 +79,66 @@ class processSample(object):
     if hasattr(self.tmpCfgFileLoaded.process,"TFileService"):
       outputList.append(path.basename(self.tmpCfgFileLoaded.process.TFileService.fileName.value()))
     return outputList
-  def applyChanges(self,samp,putNewCfgHere,additionalOutputFolder=''):
+  def applyChanges(self,samp,cfgOutputFolder=''):
+    # resetting
+    self.newCfgName = None
     from os import path
-    self.loadCfg(samp)
+    self.cfgOutputFolder = cfgOutputFolder if cfgOutputFolder != '' else self.workLoc
+    if not path.exists(self.cfgOutputFolder): 
+      os.makedirs(self.cfgOutputFolder)
+    self.samp =  samp
+    from os import path
+    self.loadTmpCfg()
     #adapt input
-    self.tmpCfgFileLoaded.process.source.fileNames = samp.getInputfiles();self.tmpCfgFileLoaded.process.maxEvents.input.setValue(samp.maxEvents)
-    additionalOutputFolderFWK = 'file:'+path.realpath(additionalOutputFolder)
+    self.tmpCfgFileLoaded.process.source.fileNames = self.samp.getInputfiles();self.tmpCfgFileLoaded.process.maxEvents.input.setValue(self.samp.maxEvents)
+    cfgOutputFolderFWK = 'file:'+path.realpath(self.cfgOutputFolder)
     #adapt output
     for outItem in self.tmpCfgFileLoaded.process.outputModules.values():
-        outItem.fileName.setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(outItem.fileName.value(),samp.postfix))[1])
+        outItem.fileName.setValue(cfgOutputFolderFWK+path.sep+path.split(addPostFixToFilename(outItem.fileName.value(),self.samp.postfix))[1])
     # TFileService
     if hasattr(self.tmpCfgFileLoaded.process,"TFileService"):
-      self.tmpCfgFileLoaded.process.TFileService.fileName.setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(self.tmpCfgFileLoaded.process.TFileService.fileName.value(),samp.postfix))[1])
+      self.tmpCfgFileLoaded.process.TFileService.fileName.setValue(cfgOutputFolderFWK+path.sep+path.split(addPostFixToFilename(self.tmpCfgFileLoaded.process.TFileService.fileName.value(),self.samp.postfix))[1])
     # MessageLogger
     if hasattr(self.tmpCfgFileLoaded.process,"MessageLogger"):
       for dest in self.tmpCfgFileLoaded.process.MessageLogger.destinations:
         if hasattr(self.tmpCfgFileLoaded.process.MessageLogger,dest):
           if hasattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename'): 
-            getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').setValue(additionalOutputFolderFWK+path.sep+path.split(addPostFixToFilename(getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').value(),samp.postfix))[1])     
-  # create new file on disk 
-  def createNewCfg (self,samp,putNewCfgHere,additionalOutputFolder=''):
+            getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').setValue(cfgOutputFolderFWK+path.sep+path.split(addPostFixToFilename(getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').value(),self.samp.postfix))[1])    
+  def createNewCfgFileName(self,otherLoc = ''):
     from os import path
+    loc = self.workLoc
     if not hasattr(self,'tmpCfgFileLoaded') or getattr(self,'tmpCfgFileLoaded') == None:
-      self.applyChanges(samp,putNewCfgHere,additionalOutputFolder)
+      print "load Cfg before"
+      return
+    if otherLoc != '':
+      loc = path.realpath(otherLoc) + path.sep
+      if not path.exists(loc):
+        os.makedirs(loc)
     # create new cfg
-    newCfgFileName= addPostFixToFilename(self.cfgFileName , samp.postfix) 
-    newCfgFileName = path.realpath(additionalOutputFolder) + path.sep + path.split(newCfgFileName)[1]
-    newCfg = open(newCfgFileName , 'w')
+    if not hasattr(self,'samp'):
+      print "No changes were applied!!! "
+      return
+    newCfgFileName= addPostFixToFilename(self.cfgFileName , self.samp.postfix)
+    newCfgFileName = loc + path.split(newCfgFileName)[1] 
+    self.newCfgName = newCfgFileName
+  # create new file on disk 
+  def createNewCfg (self):
+    if not hasattr(self,'newCfgName') or self.newCfgName == None:
+      self.createNewCfgFileName()
+    newCfg = open(self.newCfgName , 'w')
     newCfg.write(self.tmpCfgFileLoaded.process.dumpPython())
     newCfg.close()
-    self.newCfgName = newCfg.name
+  def getLogFileName(self):
+    if not hasattr(self,'newCfgName') or self.newCfgName == None:
+      self.createNewCfgFileName()
+    return self.newCfgName+"_output.log"
   # process sample
-  def runSample(self,samp,putNewCfgHere,additionalOutputFolder=''):
-    if not additionalOutputFolder == '' and not additionalOutputFolder == None:
-      additionalOutputFolder = os.path.realpath(additionalOutputFolder) + os.path.sep
-      if os.path.exists(additionalOutputFolder):
-        print "Warning folder exists"
-      else :
-        os.makedirs(additionalOutputFolder)
-    self.createNewCfg (samp,putNewCfgHere,additionalOutputFolder)
-    command="cmsRun "+ self.newCfgName +' >& '+self.newCfgName+"_output.log"
-    print command,"  outputFolder ",additionalOutputFolder
+  def runSample(self):
+    from os import path
+    if not hasattr(self,'newCfgName') or self.newCfgName == None or not path.isfile(self.newCfgName): 
+      self.createNewCfg()
+    command="cmsRun "+ self.newCfgName +' >& '+self.getLogFileName()
+    print "run Analysis by calling:\n ",command  
     subPrOutput = subprocess.Popen([command],shell=True,stdout=subprocess.PIPE,env=os.environ)
     subPrOutput.wait()
     errorcode = subPrOutput.returncode
@@ -139,13 +159,21 @@ def getFileMetaInformation(inputFiles):
 class bookKeeping():
   def __init__(self):
     self.data = {}
-  def numInputEvts(self,loadedCfg,postfix):
-    inputFilesInfo = getFileMetaInformation(loadedCfg.process.source.fileNames.value())
+  def bookKeep(self,processSample):
+    if not hasattr(processSample,"tmpCfgFileLoaded") or  not hasattr(processSample,"samp"):
+      print "no bookKeeping, ",processSample
+      return
+    postfix = processSample.samp.postfix
+    inputFilesInfo = getFileMetaInformation(processSample.tmpCfgFileLoaded.process.source.fileNames.value())
     maxInputEvts = sum([f["events"] for f in inputFilesInfo])
     self.data[postfix] = {"totalEvents":maxInputEvts}
-    maxEvtsProcess = loadedCfg.process.maxEvents.input.value()
+    maxEvtsProcess = processSample.tmpCfgFileLoaded.process.maxEvents.input.value()
     if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
       self.data[postfix]["totalEvents"] = maxEvtsProcess
+    self.data[postfix]["cfg"] = processSample.newCfgName 
+    self.data[postfix]["cfgLog"] = processSample.getLogFileName() 
+    self.data[postfix]["outputFiles"] = processSample.getListOfOutputFiles()
+    self.data[postfix]["sample"] = processSample.samp.__dict__
   def save(self,outputPath,timeStamp):
     import json
     with open(outputPath+'bookKeeping_'+timeStamp+'.json','wb') as bookKeepingFile:

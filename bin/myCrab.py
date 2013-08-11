@@ -12,7 +12,7 @@ if len(opts) > 2:
 for file in files:
   testCrab =  CrabTools.loadCrabProp(file)
   if "-automaticResubmit" in opts:
-    testCrab.automaticResubmit()
+    testCrab.automaticResubmit(False if not "-onlySummary" in opts else True)
   else:
     testCrab.executeCrabCommand(" ".join(opts),debug=True)
 
