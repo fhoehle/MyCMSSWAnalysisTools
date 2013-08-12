@@ -133,16 +133,19 @@ class processSample(object):
       self.createNewCfgFileName()
     return self.newCfgName+"_output.log"
   # process sample
-  def runSample(self):
+  def runSample(self,callCmsRun = True):
     from os import path
     if not hasattr(self,'newCfgName') or self.newCfgName == None or not path.isfile(self.newCfgName): 
       self.createNewCfg()
     command="cmsRun "+ self.newCfgName +' >& '+self.getLogFileName()
     print "run Analysis by calling:\n ",command  
-    subPrOutput = subprocess.Popen([command],shell=True,stdout=subprocess.PIPE,env=os.environ)
-    subPrOutput.wait()
-    errorcode = subPrOutput.returncode
-    print "ERRORCODE ",errorcode 
+    if callCmsRun:
+      subPrOutput = subprocess.Popen([command],shell=True,stdout=subprocess.PIPE,env=os.environ)
+      subPrOutput.wait()
+      errorcode = subPrOutput.returncode
+      print "ERRORCODE ",errorcode 
+    else:
+      return command
   def end(self):
     toBeRemoved = [self.tmpCfg,self.tmpCfg+'c']
     print "deleting tmp cfg ",self.tmpCfg, " and ",self.tmpCfg+'c'
@@ -214,3 +217,18 @@ def compileCfg(cfg,options,addOptions):
 def getTimeStamp():
   import datetime,time
   return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
+def updateColorsBookKept(bookKept,inputDicts):
+  if not hasattr(bookKept,"data"):
+    print "wrong bookKept"
+    return False
+  for key in bookKept.data.keys():
+    if not inputDicts.has_key(key):
+      print "won't update",key," because not given in input"
+      return False
+    else:
+      if not inputDicts[key].has_key("color"):
+        print "no color provided for ",key
+         return False
+      else:
+        bookKept.data[key]["sample"]["color"] =  inputDicts[key["color"]
+        return True
