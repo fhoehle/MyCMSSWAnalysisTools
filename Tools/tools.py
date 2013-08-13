@@ -228,7 +228,7 @@ def updateColorsBookKept(bookKept,inputDicts):
     else:
       if not inputDicts[key].has_key("color"):
         print "no color provided for ",key
-         return False
+        return False
       else:
-        bookKept.data[key]["sample"]["color"] =  inputDicts[key["color"]
+        bookKept.data[key]["sample"]["color"] =  inputDicts[key]["color"]
         return True
