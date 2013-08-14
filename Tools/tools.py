@@ -171,8 +171,10 @@ class bookKeeping():
     maxInputEvts = sum([f["events"] for f in inputFilesInfo])
     self.data[postfix] = {"totalEvents":maxInputEvts}
     maxEvtsProcess = processSample.tmpCfgFileLoaded.process.maxEvents.input.value()
+    print "maxEvtsProcess ",maxEvtsProcess," maxInputEvts ",maxInputEvts
     if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
-      self.data[postfix]["totalEvents"] = maxEvtsProcess
+      maxInputEvts = maxEvtsProcess
+    self.data[postfix]["totalEvents"] = maxInputEvts
     self.data[postfix]["cfg"] = processSample.newCfgName 
     self.data[postfix]["cfgLog"] = processSample.getLogFileName() 
     self.data[postfix]["outputFiles"] = processSample.getListOfOutputFiles()
