@@ -171,10 +171,8 @@ class bookKeeping():
     maxInputEvts = sum([f["events"] for f in inputFilesInfo])
     self.data[postfix] = {"totalEvents":maxInputEvts}
     maxEvtsProcess = processSample.tmpCfgFileLoaded.process.maxEvents.input.value()
-    print "maxEvtsProcess ",maxEvtsProcess," maxInputEvts ",maxInputEvts
     if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
-      maxInputEvts = maxEvtsProcess
-    self.data[postfix]["totalEvents"] = maxInputEvts
+      self.data[postfix]["totalEvents"] = maxEvtsProcess
     self.data[postfix]["cfg"] = processSample.newCfgName 
     self.data[postfix]["cfgLog"] = processSample.getLogFileName() 
     self.data[postfix]["outputFiles"] = processSample.getListOfOutputFiles()
@@ -196,25 +194,23 @@ def removeAddOptions(toRemove,options):
    options = re.sub(key+'=[^\ ]*','',options)
   return options
 ###
-def compileCfg(cfg,options,addOptions):
-  import os
-  remainingOptions = removeAddOptions(options.keys(),addOptions)
-  if remainingOptions != '' and not remainingOptions.isspace():
-    cfgDumpPython = os.path.splitext(cfg)[0]+"_addedDumpLine"+os.path.splitext(cfg)[1]
-    with open(cfg,"a") as cfgAddLine: 
-      cfgAddLine.write('myTmpFile = open ("'+cfgDumpPython+'","w"); myTmpFile.write(process.dumpPython()); myTmpFile.close() # added by script in order to dump/compile cfg');
-    import subprocess
-    buildFile = subprocess.Popen(["python "+cfg+" "+remainingOptions],shell=True,stdout=subprocess.PIPE,env=os.environ)
-    buildFile.wait()
-    errorcode = buildFile.returncode
-    if errorcode != 0:
-      sys.exit("failed building config with "+str(errorcode))
-      return 
-    else:
-      print "python cfg creation done"
-    return cfgDumpPython
+def compileCfg(cfg,options,postfix=""):
+  import os,shutil
+  cpCfg = os.path.splitext(cfg)[0]+"_compileTMP"+os.path.splitext(cfg)[1]
+  shutil.copyfile(cfg,cpCfg)
+  cfgDumpPython = os.path.splitext(cfg)[0]+"_"+postfix+os.path.splitext(cfg)[1]
+  with open(cpCfg,"a") as cfgAddLine: 
+    cfgAddLine.write('myTmpFile = open ("'+cfgDumpPython+'","w"); myTmpFile.write(process.dumpPython()); myTmpFile.close() # added by script in order to dump/compile cfg');
+  import subprocess
+  buildFile = subprocess.Popen(["python "+cpCfg+" "+options],shell=True,stdout=subprocess.PIPE,env=os.environ)
+  buildFile.wait()
+  errorcode = buildFile.returncode
+  if errorcode != 0:
+    sys.exit("failed building config with "+str(errorcode))
+    return 
   else:
-    return cfg
+    print "python cfg creation done"
+    return cfgDumpPython
 ###
 def getTimeStamp():
   import datetime,time
