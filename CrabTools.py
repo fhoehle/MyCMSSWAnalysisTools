@@ -62,8 +62,13 @@ class crabProcess(object):
     self.workdir = workdir
     self.timeSt = timeSt 
     self.addGridDir = addGridDir
+    print "self.addGridDir ",self.addGridDir," self.postfix ",self.postfix," self.timeSt ",self.timeSt 
+    self.user_remote_dir = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") + self.postfix+"_"+self.timeSt
     self.__type__="crabProcess"
     self.checkRequirements()
+  def applyChanges(self,willBeChanged,changesGivenHere):
+    for k,i in changesGivenHere.iteritems():
+      willBeChanged[k].update(i)
   def checkRequirements(self):
     import sys,os
     if not checkGridCert():
@@ -72,7 +77,7 @@ class crabProcess(object):
       sys.exit("crab not found")
   def writeCrabCfg(self):
     import os
-    cCfg = open(self.crabDir+os.path.sep+"crab.cfg" ,'w')
+    cCfg = open(self.crabDir.rstrip('/')+os.path.sep+"crab.cfg" ,'w')
     for sec,vals in self.crabCfg.iteritems():
       cCfg.write("["+sec+"]");cCfg.write("\n")
       for k,val in vals.iteritems():
@@ -81,27 +86,32 @@ class crabProcess(object):
     self.crabCfgFilename = cCfg.name
     return cCfg.name 
   ###
+  def setCrabDir(self,addCrabDir ="",timeSt = "",workdir = ""):
+    if workdir == "":
+      workdir =  self.workdir
+    print workdir
+    import os
+    print "workdir ",workdir," addCrabDir ",addCrabDir," timeSt ",timeSt
+    crabDir = os.path.realpath(workdir)+((os.path.sep+addCrabDir) if addCrabDir != "" else "")+(("_"+timeSt) if timeSt != "" else "")
+    print "crabDir ",crabDir
+    self.crabDir = crabDir + os.path.sep if not crabDir.endswith('/') else "" 
+    return crabDir
   def createCrabDir(self):
     import os
-    crabDir = os.path.realpath(self.workdir)+os.path.sep+self.postfix+"_"+self.timeSt
-    if not os.path.isdir(crabDir):
-      os.makedirs(crabDir)
-    self.crabDir = crabDir
-    return crabDir  
+    if not os.path.isdir(self.crabDir):
+      os.makedirs(self.crabDir)
   ##
-  def createCrabCfg(self,outputFileList = None):
+  def createCrabCfg(self,changes = None):
     tmpCrabCfg = crabCfg
     tmpCrabCfg["CMSSW"]["pset"]=self.cfg
-    tmpCrabCfg["USER"]["user_remote_dir"] = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") + self.postfix+"_"+self.timeSt
-    #self.cfg.setOutputFilesGrid()
-    if outputFileList == None:
-      tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
-      tmpCrabCfg["CMSSW"].pop("output_file",None)
-    else:
-      tmpCrabCfg["CMSSW"]["output_file"] = ",".join(outputFileList)
+    tmpCrabCfg["USER"]["user_remote_dir"] = self.user_remote_dir
+    tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
+    tmpCrabCfg["CMSSW"].pop("output_file",None)
     tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp
+    if changes != None:
+      self.applyChanges(tmpCrabCfg,changes)  
     self.crabCfg =tmpCrabCfg
-    return tmpCrabCfg
+    return self.crabCfg
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
     if not hasattr(self,'crabDir'):
       self.createCrabDir()

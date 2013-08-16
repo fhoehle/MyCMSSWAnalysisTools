@@ -36,6 +36,9 @@ def getDatasetName(sample):
   print "found ",datasets
   return datasets[0]
 ########################
+def executeCommandSameEnv(command):
+ import os,subprocess
+ return subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
 class processSample(object):
   def __init__(self,cfgFileName):
     self.cfgFileName = cfgFileName
@@ -140,6 +143,7 @@ class processSample(object):
     command="cmsRun "+ self.newCfgName +' >& '+self.getLogFileName()
     print "run Analysis by calling:\n ",command  
     if callCmsRun:
+      sys.stdout.flush()
       subPrOutput = subprocess.Popen([command],shell=True,stdout=subprocess.PIPE,env=os.environ)
       subPrOutput.wait()
       errorcode = subPrOutput.returncode
