@@ -40,10 +40,11 @@ def executeCommandSameEnv(command):
  import os,subprocess
  return subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
 class processSample(object):
-  def __init__(self,cfgFileName):
+  def __init__(self,cfgFileName,debug=False):
     self.cfgFileName = cfgFileName
     self.newCfgName = None
     self.tmpCfg = None
+    self.debug = debug
     from os import getenv,path
 #    self.workLoc = os.getenv('PWD') if workLoc == "" else workLoc
 #    from os import path
@@ -60,6 +61,8 @@ class processSample(object):
     tmpCfg.write(cfgFileLoaded.process.dumpPython())
     tmpCfg.close()
     self.tmpCfg = tmpCfg.name
+    if self.debug:
+      print "created tmpCfg ",self.tmpCfg
   def loadTmpCfg(self):
     if not hasattr(self,'tmpCfg') or self.tmpCfg == None:
       self.createTmpCfg()
@@ -67,6 +70,8 @@ class processSample(object):
     from os import path
     tmpCfgFile = open(self.tmpCfg,'r')
     self.tmpCfgFileLoaded = imp.load_source('tmpCfg_loaded',self.tmpCfg,tmpCfgFile);tmpCfgFile.close()
+    if self.debug:
+      print "loaded tmpCfg ",self.tmpCfg
   def setOutputFilesGrid(self):
     from os import path
     for outItem in self.tmpCfgFileLoaded.process.outputModules.values():
@@ -121,9 +126,11 @@ class processSample(object):
     if not hasattr(self,'samp'):
       print "No changes were applied!!! "
       return
-    newCfgFileName= addPostFixToFilename(self.cfgFileName , self.samp.postfix)
+    newCfgFileName= addPostFixToFilename(self.cfgFileName , "_changesApplied")
     newCfgFileName = loc + path.split(newCfgFileName)[1] 
     self.newCfgName = newCfgFileName
+    if self.debug:
+      print "created newCfgName ",self.newCfgName
   # create new file on disk 
   def createNewCfg (self):
     if not hasattr(self,'newCfgName') or self.newCfgName == None:
@@ -131,6 +138,8 @@ class processSample(object):
     newCfg = open(self.newCfgName , 'w')
     newCfg.write(self.tmpCfgFileLoaded.process.dumpPython())
     newCfg.close()
+    if self.debug:
+      print "written newCfg on disk ",self.newCfgName
   def getLogFileName(self):
     if not hasattr(self,'newCfgName') or self.newCfgName == None:
       self.createNewCfgFileName()
@@ -197,6 +206,11 @@ def removeAddOptions(toRemove,options):
   for key in toRemove:
    options = re.sub(key+'=[^\ ]*','',options)
   return options
+def removeOptFromArgv(opt,removeVal=False):
+  import sys
+  if removeVal:
+    sys.argv.pop(sys.argv.index(opt)+1)
+  sys.argv.remove(opt)
 ###
 def compileCfg(cfg,options,postfix=""):
   import os,shutil
