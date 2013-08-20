@@ -206,11 +206,15 @@ def removeAddOptions(toRemove,options):
   for key in toRemove:
    options = re.sub(key+'=[^\ ]*','',options)
   return options
-def removeOptFromArgv(opt,removeVal=False):
+def removeOptFromArgv(opt,rem = False):
   import sys
-  if removeVal:
-    sys.argv.pop(sys.argv.index(opt)+1)
-  sys.argv.remove(opt)
+  optFound = next( (o for o in sys.argv if re.match('^--'+opt+'={0,1}.*',o)),None)
+  if optFound:
+    idx = sys.argv.index(optFound)
+    print idx, " ",optFound
+    if len(sys.argv) > idx+1 and not sys.argv[idx+1].startswith('-'):
+      sys.argv.pop(idx+1)
+    sys.argv.remove(optFound)
 ###
 def compileCfg(cfg,options,postfix=""):
   import os,shutil

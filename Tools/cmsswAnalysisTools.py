@@ -1,7 +1,7 @@
 ###
 # run cmssw analysis
 import FWCore.ParameterSet.Config as cms
-import sys,imp,subprocess,os,getopt,re
+import sys,imp,subprocess,os,getopt,re,argparse
 sys.path.append(os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/Tools')
 import tools as myTools
 ####
@@ -10,33 +10,38 @@ class cmsswAnalysis(object):
      self.cfg=cfg
      self.samples=samples
   def readOpts(self):
-    opts, args = getopt.getopt(sys.argv[1:], '',['addOptions=','help','runGrid','runParallel=','specificSamples=','dontExec'])
-    print "given opts ",sys.argv
+    #opts, args = getopt.getopt(sys.argv[1:], '',['addOptions=','help','runGrid','runParallel=','specificSamples=','dontExec'])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--runGrid',action='store_false',default=False,help=' if crab should be called, specific crab arguments can be provided in sample dictionary')
+    parser.add_argument('--dontExec',action='store_true',default=False,help=' don\'t call crab or run cfgs just create them and crab.cfg if is used')
+    parser.add_argument('--addOptions',type=str,default='',help="options used for cfg compilation options like runOnTTbar=True")
+    parser.add_argument('--runParallel',default=False,help="call multiple instances for cfgs each process runs on one cfg")
+    parser.add_argument('--specificSamples',type=str,default=None,help="only process given samples given by labels")
+    parser.add_argument('--usage',action='store_true',default=False,help='help message')
+    args = parser.parse_known_args()
+    args,notKnownArgs = args
+    print args.usage
+    if args.usage:
+      parser.print_help()
+      sys.exit(0)
+    print "args ",args
+    self.notKnownArgs = notKnownArgs
+    print "notKnown ",notKnownArgs
     self.numProcesses=3
-    self.runParallel=False
-    self.addOptions=''
-    self.runGrid = False
-    self.specificSamples = None
-    self.dontExec = False
-    for opt,arg in opts:
-      if opt in ("--addOptions"):
-        self.addOptions=arg
-        myTools.removeOptFromArgv(opt,True)
-      if opt in ("--runGrid"):
-        self.runGrid = True
-        myTools.removeOptFromArgv(opt)
-      if opt in ("--dontExec"):
-        self.dontExec = True; myTools.removeOptFromArgv(opt)
-      if ("--runParallel") in opt:
-        self.numProcesses =  int(arg) if arg != None  else self.numProcesses
-        myTools.removeOptFromArgv(opt,arg != None)
-        self.runParallel=True
-      if ("--specificSamples") in opt:
-        self.specificSamples = arg.split(",")
-        myTools.removeOptFromArgv(opt,True)
-      if opt in ("--help"):
-        print 'python runAnalysis.py --specificSamples label1,label2 --runParallel 2 --runGrid --addOptions \"maxEvents=1 outputPath=/net/scratch_cms/institut_3b/hoehle/hoehle/tmp\"'
-        sys.exit(0)
+    if args.runParallel != False:
+      self.numProcesses = int(args.runParallel)
+    
+    self.runParallel= args.runParallel 
+    self.runGrid = args.runGrid
+    self.specificSamples = args.specificSamples
+    self.dontExec = args.dontExec
+    self.addOptions=args.addOptions
+    for opt in args.__dict__.keys():
+       myTools.removeOptFromArgv(opt)
+#      if opt in ("--help"):
+#        print 'python runAnalysis.py --specificSamples label1,label2 --runParallel 2 --runGrid --addOptions \"maxEvents=1 outputPath=/net/scratch_cms/institut_3b/hoehle/hoehle/tmp\"'
+#        sys.exit(0)
+    self.specificSamples = self.specificSamples if self.specificSamples != None else self.specificSamples
     options ={}
     options["maxEvents"]=1000
     self.timeStamp = myTools.getTimeStamp()
@@ -63,6 +68,7 @@ class cmsswAnalysis(object):
     for postfix,sampDict in self.samples.iteritems()if self.specificSamples == None else [(p,s) for p,s in self.samples.iteritems() if p in self.specificSamples ]:
       remainingOpts = myTools.removeAddOptions(self.options.keys(),self.addOptions+(" "+sampDict["addOptions"]) if sampDict.has_key("addOptions") else "")
       print "remainingOpts ",remainingOpts
+      print "notKnown ",self.notKnownArgs
       cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
       processSample =  myTools.processSample(cfgSamp)
       sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
@@ -103,4 +109,3 @@ class cmsswAnalysis(object):
 
   ##
     self.bookKeeping.save(self.options["outputPath"]+'/',self.timeStamp)
-   
