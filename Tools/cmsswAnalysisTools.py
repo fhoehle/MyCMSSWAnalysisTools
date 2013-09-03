@@ -12,14 +12,16 @@ class cmsswAnalysis(object):
   def readOpts(self):
     #opts, args = getopt.getopt(sys.argv[1:], '',['addOptions=','help','runGrid','runParallel=','specificSamples=','dontExec'])
     parser = argparse.ArgumentParser()
-    parser.add_argument('--runGrid',action='store_false',default=False,help=' if crab should be called, specific crab arguments can be provided in sample dictionary')
+    parser.add_argument('--runGrid',action='store_true',default=False,help=' if crab should be called, specific crab arguments can be provided in sample dictionary')
     parser.add_argument('--dontExec',action='store_true',default=False,help=' don\'t call crab or run cfgs just create them and crab.cfg if is used')
-    parser.add_argument('--addOptions',type=str,default='',help="options used for cfg compilation options like runOnTTbar=True")
+    parser.add_argument('--addOptions',type=str,default='',help="options used for cfg compilation options like runOnTTbar=True or outputPath")
     parser.add_argument('--runParallel',default=False,help="call multiple instances for cfgs each process runs on one cfg")
     parser.add_argument('--specificSamples',type=str,default=None,help="only process given samples given by labels")
+    parser.add_argument('--debug',action='store_true',default=False,help=' activate debug modus ')
     parser.add_argument('--usage',action='store_true',default=False,help='help message')
     args = parser.parse_known_args()
     args,notKnownArgs = args
+    self.debug = args.debug
     print args.usage
     if args.usage:
       parser.print_help()
@@ -45,15 +47,18 @@ class cmsswAnalysis(object):
     options ={}
     options["maxEvents"]=1000
     self.timeStamp = myTools.getTimeStamp()
-    options["outputPath"]=os.getenv("PWD")+os.path.sep+'TMP_'+self.timeStamp
+    
+    options["outputPath"]=os.getenv("PWD")+os.path.sep+'TMP_'+self.timeStamp+os.path.sep
     for opt in self.addOptions.split():
       reOpt = re.match('([^=]*)=([^=]*)',opt)
       if options.has_key(reOpt.group(1)):
         options[reOpt.group(1)]=reOpt.group(2)
-      if options["outputPath"] != os.getenv("PWD"):
+      if not options["outputPath"].endswith(self.timeStamp+os.path.sep):
         options["outputPath"]= os.path.realpath(options["outputPath"])+"_"+self.timeStamp+os.path.sep 
       print options["outputPath"]
     self.options =options
+    if self.debug:
+      print self.__dict__
 ## preparing cfg with additional options
 #make tmp copy  
   def startAnalysis(self):

@@ -141,7 +141,7 @@ class crabProcess(object):
     if numJobs > 500:
       print "submitting ",numJobs," jobs"
       import time
-      for i in range(numJobs/500):
+      for i in range(numJobs/500+1):
         print "submitting block ",i
         self.executeCrabCommand("-submit "+str(i*500+1)+"-"+str((i+1)*500),True)
     else:
@@ -199,10 +199,11 @@ def removeGridFolderCrab(cJ):
   commandAcGridFolder("rm ",cJ.getAcGridDir().rstrip("/")+"/*")
   commandAcGridFolder("rmdir ",cJ.getAcGridDir().rstrip("/"))
 def saveCrabProp(crabP,jsonFilename):
+    print "saving crab configuration: ",jsonFilename
     import json
     with open (jsonFilename,'wb') as f:
       json.dump(crabP.__dict__,f)
-def loadCrabProp(jsonFilename):
+def loadCrabJob(jsonFilename):
     import json
     def objD(obj):
       if '__type__' in obj and obj['__type__'] == 'crabProcess':
