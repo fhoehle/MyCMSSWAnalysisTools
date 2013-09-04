@@ -101,7 +101,7 @@ class cmsswAnalysis(object):
         crabP.executeCrabCommand("-create",debug = True) 
         CrabTools.saveCrabProp(crabP,self.options["outputPath"]+"/"+postfix+"_"+self.timeStamp+"_CrabCfg.json")
         if not dontExecCrab:
-          crabP.executeCrabCommand("-submit",debug = True)
+          crabP.submit()
           crabP.executeCrabCommand("-status")
     processSample.end()
     dontExecParallel = self.dontExec
