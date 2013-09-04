@@ -10,7 +10,7 @@ print "loading ",files
 if len(opts) > 2:
   sys.exit("too many options, only one supported")
 for file in files:
-  testCrab =  CrabTools.loadCrabProp(file)
+  testCrab =  CrabTools.loadCrabJob(file)
   if "-automaticResubmit" in opts:
     testCrab.automaticResubmit(False if not "-onlySummary" in opts else True)
   else:
