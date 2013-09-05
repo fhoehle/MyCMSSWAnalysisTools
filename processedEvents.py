@@ -21,18 +21,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--xmlFile',default='',help=' input xmlFile')     
 parser.add_argument('--jobNum',nargs='+',default=[],help=' jobNumbers')
 args=parser.parse_args()
-#opts, args = getopt.getopt(sys.argv[1:], 'h',['xmlFile=','jobNum='])
-#xmlFile=None
-#jobNum = []
-#for opt,arg in opts:
-# #print opt , " :   " , arg
-# if opt in  ("--xmlFile"):
-#  xmlFile=arg
-# if opt in ("--jobNum"):
-#  jobNum = arg.split(',')
-# if opt in ("-h"):
-#  print "python processedEvents.py --xmlFile arguments.xml --jobNum 1,2,3 "
-#  sys.exit(0)
 dom = parse(args.xmlFile)
 if args.xmlFile == None or args.xmlFile =="" or (args.jobNum == []) :
  print "input wrong"
