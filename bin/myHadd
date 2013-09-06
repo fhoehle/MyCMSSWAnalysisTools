@@ -8,22 +8,10 @@ inputFiles=copy.deepcopy(args)
 if len(args) == 1 and not args[0].endswith('.root'):
   print "using fileList"
   inputFiles = [ l.strip() for l in open(args[0]) if not l.strip().startswith('#') ]
-#print inputFiles
-#
-#allArgs=("$@")
-##echo ${allArgs[@]}
-#target=${allArgs[0]}
-#echo "target "$target
-#files=(${allArgs[@]:1})
-#if [ -f $PWD"/"$target ] ; then
-#   echo "$target already exists"
-#   exit 1 
-#fi
-##echo "files "${files[@]}
 def executeCommandSameEnv(command):
  import os,subprocess
  return subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
-chunkSize=3
+chunkSize=10
 noFiles=len(inputFiles)
 mergeSteps=noFiles/chunkSize+1
 print "mergeSteps ",mergeSteps
