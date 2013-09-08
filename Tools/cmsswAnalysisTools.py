@@ -98,11 +98,12 @@ class cmsswAnalysis(object):
         crabP.createCrabCfg(sampDict.get("crabConfig"))
         crabCfgFilename = crabP.createCrabDir()
         crabP.writeCrabCfg()
-        crabP.executeCrabCommand("-create",debug = True) 
+        crabP.create()#executeCrabCommand("-create",debug = True) 
         CrabTools.saveCrabProp(crabP,self.options["outputPath"]+"/"+postfix+"_"+self.timeStamp+"_CrabCfg.json")
         if not dontExecCrab:
           crabP.submit()
           crabP.executeCrabCommand("-status")
+        self.bookKeeping.addCrab(CrabTools.jsonFilename)
     processSample.end()
     dontExecParallel = self.dontExec
     if self.runParallel and len(commandList) > 0:

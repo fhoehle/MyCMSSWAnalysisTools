@@ -108,10 +108,14 @@ class crabProcess(object):
     tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
     tmpCrabCfg["CMSSW"].pop("output_file",None)
     tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp
+#    tmpCrabCfg["USER"]["ui_working_dir"]
     if changes != None:
       self.applyChanges(tmpCrabCfg,changes)  
     self.crabCfg =tmpCrabCfg
     return self.crabCfg
+  def create(self):
+    self.executeCrabCommand("-create",debug = True) 
+
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
     if not hasattr(self,'crabDir'):
       self.createCrabDir()
@@ -201,6 +205,7 @@ def removeGridFolderCrab(cJ):
 def saveCrabProp(crabP,jsonFilename):
     print "saving crab configuration: ",jsonFilename
     import json
+    self.jsonFilename = jsonFilename
     with open (jsonFilename,'wb') as f:
       json.dump(crabP.__dict__,f)
 def loadCrabJob(jsonFilename):

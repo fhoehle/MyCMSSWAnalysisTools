@@ -32,7 +32,8 @@ for i in range( mergeSteps):
   sP.wait()
   if sP.returncode != 0:
     print sP.communicate()[0]
-    sys.exit(sP.returncode) 
+    sys.exit(sP.returncode)
+  sys.stdout.flush() 
 if mergeSteps > 1:
   sP = subprocess.Popen(["rm "+targetTmpPattern+"*"],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
   sP.wait()

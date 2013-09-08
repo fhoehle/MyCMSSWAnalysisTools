@@ -194,6 +194,8 @@ class bookKeeping():
     import json
     with open(outputPath+'bookKeeping_'+timeStamp+'.json','wb') as bookKeepingFile:
       json.dump(self.data,bookKeepingFile)
+  def addCrab(self,crabJson):
+    self.data[postfix]["crabJob"]=crabJson
 #####
 def createWorkDirCpCfg(wDir,cfg,timeSt):
   import os,shutil
