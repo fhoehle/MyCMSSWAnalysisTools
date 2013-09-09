@@ -150,15 +150,21 @@ class crabProcess(object):
         self.executeCrabCommand("-submit "+str(i*500+1)+"-"+str((i+1)*500),True)
     else:
       self.executeCrabCommand("-submit ",True)
+  def jobRetrievedGood(self,jobStatusS = None):
+    import re
+    jobs = []
+    for  j in jobStatusS if jobStatusS else [ l for l in self.executeCrabCommand("-status",False,True) if re.match('^[0-9]+[ \t]+[YN][ \t]+[a-zA-Z]+[ \t]+',l)]:
+      jSplit = j.split()
+      if  len(jSplit) > 5 and jSplit[2] == "Retrieved" and jSplit[5] == "0":
+        jobs.append(jSplit[0])
+    return jobs
   def automaticResubmit(self,onlySummary = False):
     import re
     jobOutput = [ l for l in self.executeCrabCommand("-status",False,True) if re.match('^[0-9]+[ \t]+[YN][ \t]+[a-zA-Z]+[ \t]+',l)]
-    doneJobsGood = []; doneJobsBad = []; abortedJobs = []; downloadableJobs = []; downloadedJobsBad = [];downloadableNoCodeJobs=[]
+    doneJobsGood = self.jobRetrievedGood(jobOutput); doneJobsBad = []; abortedJobs = []; downloadableJobs = []; downloadedJobsBad = [];downloadableNoCodeJobs=[]
     for j in jobOutput:
       jSplit = j.split()
       if  len(jSplit) > 5:
-        if jSplit[2] == "Retrieved" and jSplit[5] == "0":
-          doneJobsGood.append(jSplit[0])
         if jSplit[2] == "Retrieved" and jSplit[5] != "0":
           downloadedJobsBad.append(jSplit[0])
         if jSplit[2] == "Done" and jSplit[5] != "0":
@@ -220,3 +226,13 @@ def loadCrabJob(jsonFilename):
     with open(jsonFilename , 'rb') as jsonFile:
       cP.__dict__ = json.load(jsonFile)
     return cP
+def myGetSubNodeByName(node,name): 
+ if not node: 
+   return None 
+ if not hasattr(node,'childNodes'): 
+   return None 
+ for i,tmp_node in enumerate(node.childNodes): 
+  if tmp_node.nodeName == name: 
+   return tmp_node 
+ return None
+
