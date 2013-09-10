@@ -30,7 +30,7 @@ print "done"
 if args.debug:
   print analysisFiles
 if len(analysisFiles) > 0:
-  target = myHadd.removeCrabJobPostfix(analysisFiles.values()[0],args.targetPostfix if not "label" else dataset['sample']["label"])+"_bookKeeping"
+  target = myHadd.removeCrabJobPostfix(analysisFiles.values()[0],"_bookKeeping"+(args.targetPostfix if not "label" else dataset['sample']["label"]))
   print "hadding ",target
   sys.stdout.flush()
   myHadd.mergedHadd(target,analysisFiles.values(), debug = args.debug)
