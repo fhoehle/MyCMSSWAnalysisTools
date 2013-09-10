@@ -1,9 +1,10 @@
 import sys,os,json,argparse
-sys.path.extend([os.getenv('CMSSW_BASE')+fld for fld in ['/MyCMSSWAnalysisTools/','/MyCMSSWAnalysisTools/bin/','/src/GridTools/GridStuff_FileManagement/']])
+sys.path.extend([os.getenv('CMSSW_BASE')+fld for fld in ['/MyCMSSWAnalysisTools/','/MyCMSSWAnalysisTools/bin/','/MyCMSSWAnalysisTools/Tools/','/src/GridTools/GridStuff_FileManagement/']])
 import CrabTools
 import myHadd 
 import processedEvents
 import printGridUrlfromCrabReport
+import tools
 parser = argparse.ArgumentParser()
 parser.add_argument('--bookKeeping',help='bookKeeping file which should be updated to craboutput',required=True)
 parser.add_argument('--debug',action="store_true",default=False,help='debug mode')
@@ -29,9 +30,15 @@ analysisFiles = printGridUrlfromCrabReport.getFileNames(True,False,False,[curren
 print "done"
 if args.debug:
   print analysisFiles
-if len(analysisFiles) > 0:
+if len(analysisFiles.values()) > 0:
   target = myHadd.removeCrabJobPostfix(analysisFiles.values()[0],"_bookKeeping"+(args.targetPostfix if not "label" else dataset['sample']["label"]))
   print "hadding ",target
   sys.stdout.flush()
   myHadd.mergedHadd(target,analysisFiles.values(), debug = args.debug)
-print "done"
+  print "done" 
+  dataset['sample']["outputFilesCrab"]=[target]
+bookKeepingFileName = tools.addPostFixToFilename(args.bookKeeping,'_bookKeepingUpdated_'+tools.getTimeStamp())
+updatedbookKeeping = open(bookKeepingFileName ,'wb')
+json.dump(data,updatedbookKeeping);updatedbookKeeping.close()
+print "new bookKeeping created ",bookKeepingFileName
+

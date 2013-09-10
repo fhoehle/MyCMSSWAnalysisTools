@@ -48,8 +48,8 @@ def mergedHadd(target,inputFiles,chunkSize=10,debug = False):
     sP.wait()
     if debug:
       print sP.communicate()[0]
-    sys.exit(sP.returncode)
-  sys.exit(0)
+    return sP.returncode
+  return 0
 ################
 def main():
   parser = argparse.ArgumentParser()
@@ -67,6 +67,7 @@ def main():
     print "target ",args.target
     print "inputFiles ",len(inputFiles)," : ",inputFiles
   mergedHadd(args.target,inputFiles,debug=args.debug)
+  return 0
 ########
 if __name__ == "__main__":
-  main()
+  sys.exit(main())

@@ -211,7 +211,7 @@ def removeGridFolderCrab(cJ):
 def saveCrabProp(crabP,jsonFilename):
     print "saving crab configuration: ",jsonFilename
     import json
-    self.jsonFilename = jsonFilename
+    #self.jsonFilename = jsonFilename
     with open (jsonFilename,'wb') as f:
       json.dump(crabP.__dict__,f)
 def loadCrabJob(jsonFilename):

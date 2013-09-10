@@ -179,23 +179,23 @@ class bookKeeping():
     if not hasattr(processSample,"tmpCfgFileLoaded") or  not hasattr(processSample,"samp"):
       print "no bookKeeping, ",processSample
       return
-    postfix = processSample.samp.postfix
+    self.postfix = processSample.samp.postfix
     inputFilesInfo = getFileMetaInformation(processSample.tmpCfgFileLoaded.process.source.fileNames.value())
     maxInputEvts = sum([f["events"] for f in inputFilesInfo])
-    self.data[postfix] = {"totalEvents":maxInputEvts}
+    self.data[self.postfix] = {"totalEvents":maxInputEvts}
     maxEvtsProcess = processSample.tmpCfgFileLoaded.process.maxEvents.input.value()
     if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
-      self.data[postfix]["totalEvents"] = maxEvtsProcess
-    self.data[postfix]["cfg"] = processSample.newCfgName 
-    self.data[postfix]["cfgLog"] = processSample.getLogFileName() 
-    self.data[postfix]["outputFiles"] = processSample.getListOfOutputFiles()
-    self.data[postfix]["sample"] = processSample.samp.__dict__
+      self.data[self.postfix]["totalEvents"] = maxEvtsProcess
+    self.data[self.postfix]["cfg"] = processSample.newCfgName 
+    self.data[self.postfix]["cfgLog"] = processSample.getLogFileName() 
+    self.data[self.postfix]["outputFiles"] = processSample.getListOfOutputFiles()
+    self.data[self.postfix]["sample"] = processSample.samp.__dict__
   def save(self,outputPath,timeStamp):
     import json
     with open(outputPath+'bookKeeping_'+timeStamp+'.json','wb') as bookKeepingFile:
       json.dump(self.data,bookKeepingFile)
   def addCrab(self,crabJson):
-    self.data[postfix]["crabJob"]=crabJson
+    self.data[self.postfix]["crabJob"]=crabJson
 #####
 def createWorkDirCpCfg(wDir,cfg,timeSt):
   import os,shutil
