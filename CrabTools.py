@@ -4,6 +4,7 @@ crabCfg = {
     "jobtype":"cmssw"
     ,"scheduler" : "remoteGlidein" #sge
     #,"server_name" : "legnaro"
+    #,"submit_host": "cern_vocms20"
     ,"use_server" : 0
     }
   #,"SGE":{
@@ -235,4 +236,19 @@ def myGetSubNodeByName(node,name):
   if tmp_node.nodeName == name: 
    return tmp_node 
  return None
-
+def updateSubmitServer(newServer,dbFile,debug=False):
+  import sqlite3 
+  conn = sqlite3.connect(dbFile)
+  conn.row_factory = sqlite3.Row
+  cur = conn.cursor()
+  if debug:
+    tabs = cur.execute("SELECT * FROM sqlite_master WHERE type='table';").fetchall()
+    for tab in tabs:
+      print tab["name"]
+  rows = cur.execute("SELECT server_name FROM bl_task").fetchall()
+  if len(rows) > 1:
+    print "error more jobs than expected ",len(rows)
+  print "old server ",rows[0]["server_name"]
+  cur.execute("UPDATE bl_task SET server_name='"+newServer+"'")
+  conn.commit()
+  print "updated to ",newServer

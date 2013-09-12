@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys,os,json,argparse
 sys.path.extend([os.getenv('CMSSW_BASE')+fld for fld in ['/MyCMSSWAnalysisTools/','/MyCMSSWAnalysisTools/bin/','/MyCMSSWAnalysisTools/Tools/','/src/GridTools/GridStuff_FileManagement/']])
 import CrabTools
