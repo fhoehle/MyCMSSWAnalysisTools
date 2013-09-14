@@ -24,8 +24,8 @@ jobs = cJ.jobRetrievedGood()
 print ' done. ',len(jobs),' will be used'
 argumentsFile = currentCrabJobDir+os.path.sep+'share/arguments.xml'
 maxEvents = processedEvents.getMaxEvents(argumentsFile,jobs)
-dataset['sample']['crab']=True
-dataset['sample']['totalEvents']=sum([ int(e) for e in maxEvents.values()])
+dataset['crab']=True
+dataset['totalEvents']=sum([ int(e) for e in maxEvents.values()])
 print "create list of Files",
 analysisFiles = printGridUrlfromCrabReport.getFileNames(True,False,False,[currentCrabJobDir+os.path.sep+'res/crab_fjr_'+j+'.xml' for j in jobs],args.debug,True)
 print "done"
@@ -37,7 +37,7 @@ if len(analysisFiles.values()) > 0:
   sys.stdout.flush()
   myHadd.mergedHadd(target,analysisFiles.values(), debug = args.debug)
   print "done" 
-  dataset['sample']["outputFilesCrab"]=[target]
+  dataset["outputFilesCrab"]=[target]
 bookKeepingFileName = tools.addPostFixToFilename(args.bookKeeping,'_bookKeepingUpdated_'+tools.getTimeStamp())
 updatedbookKeeping = open(bookKeepingFileName ,'wb')
 json.dump(data,updatedbookKeeping);updatedbookKeeping.close()
