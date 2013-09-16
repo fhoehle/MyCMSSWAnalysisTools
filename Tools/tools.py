@@ -6,6 +6,16 @@ def addPostFixToFilename(name,postfix):
   splittedName = path.splitext(name)
   return splittedName[0] + (("_"+postfix) if postfix != "" else "") + splittedName[1]
 #########################
+class analysisSample (object):
+  def __init__(self):
+    self.xSec = None; self.processedLumi = None; self.TFileServiceFile = None; self.lumiForPlots = None
+  def loadFromDataset(self,dS):
+    if not isinstance(dS,list):
+      dS = [dS]
+    self.datasets=dS
+  def merge(self,mergeLabel):
+    self.mergeLabel  
+############################
 class sample(object):
   def __init__(self,filenames,label,xSec,postfix = "",maxEvents=-1,dataset = None):
     self.filenames = filenames
