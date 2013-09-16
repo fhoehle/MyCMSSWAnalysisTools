@@ -33,10 +33,13 @@ if args.debug:
   print analysisFiles
 if len(analysisFiles.values()) > 0:
   target = myHadd.removeCrabJobPostfix(analysisFiles.values()[0],"_bookKeeping"+(args.targetPostfix if not "label" else dataset['sample']["label"]))
-  print "hadding ",target
-  sys.stdout.flush()
-  myHadd.mergedHadd(target,analysisFiles.values(), debug = args.debug)
-  print "done" 
+  if os.path.isfile(target):
+    print "target ",target," already exists "
+  else:
+    print "hadding ",target
+    sys.stdout.flush()
+    myHadd.mergedHadd(target,analysisFiles.values(), debug = args.debug)
+    print "done" 
   dataset["outputFilesCrab"]=[target]
 bookKeepingFileName = tools.addPostFixToFilename(args.bookKeeping,'_bookKeepingUpdated_'+tools.getTimeStamp())
 updatedbookKeeping = open(bookKeepingFileName ,'wb')
