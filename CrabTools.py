@@ -1,4 +1,5 @@
 ### default dict
+import crabDeamonTools
 crabCfg = {
   "CRAB" :{
     "jobtype":"cmssw"
@@ -55,8 +56,9 @@ def checkGridCert():
   subPrOutput.wait()
   return subPrOutput.returncode == 0
 ###
-class crabProcess(object):
+class crabProcess(crabDeamonTools.crabDeamon):
   def __init__(self,postfix,cfg,samp,workdir,timeSt,addGridDir=""):
+    self.crabJobDir = None
     self.postfix = postfix
     self.cfg = cfg
     self.samp = samp
@@ -66,6 +68,7 @@ class crabProcess(object):
     print "self.addGridDir ",self.addGridDir," self.postfix ",self.postfix," self.timeSt ",self.timeSt 
     self.user_remote_dir = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") + self.postfix+"_"+self.timeSt
     self.__type__="crabProcess"
+    self.crabJobDir = None
     self.checkRequirements()
   def applyChanges(self,willBeChanged,changesGivenHere):
     for k,i in changesGivenHere.iteritems():
@@ -115,43 +118,16 @@ class crabProcess(object):
     self.crabCfg =tmpCrabCfg
     return self.crabCfg
   def create(self):
-    self.executeCrabCommand("-create",debug = True) 
-
+    self.executeCrabCommand("-create",debug = True)
+    crabDeamon.findCrabJobDir(self.crabDir) 
+  def changeCrabJobDir(self,newDir):
+    self.crabJobDir = newDir
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
     if not hasattr(self,'crabDir'):
       self.createCrabDir()
-    import subprocess,os,sys
-    command = "cd "+self.crabDir+" && crab "+command+' ; echo "stopKeyDONE"'
-    if debug:
-      print "executing command ",command
-    subPrOutput = subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
-    subPStdOut = []
-    for line in iter(subPrOutput.stdout.readline,"stopKeyDONE\n"):
-      if debug:
-        print line
-      subPStdOut.append(line)
-    subPrOutput.stdout.close()
-    if not returnOutput:
-      print "ERRORCODE ",subPrOutput.returncode
-    else:
-      return subPStdOut
-  def status(self):
-    self.executeCrabCommand("-status",debug = True)
-  def getoutput(self):
-    self.executeCrabCommand("-getoutput",debug = True)
-  def multiCommand(self,command,listJobs,debug=False):
-    numJobs = len(listJobs)
-    crabCommand = None
-    if numJobs > 500:
-      print "submitting ",numJobs," jobs"
-      for i in range(numJobs/500+1):
-        begin=(i*500); end=(((i+1)*500) if ((i+1)*500) < numJobs else numJobs)
-        jobsToSubmit = listJobs[begin:end]
-        crabCommand=command+" "+",".join(jobsToSubmit)
-        self.executeCrabCommand(crabCommand,debug)
-    else:
-      self.executeCrabCommand(command+" "+",".join(listJobs),True)
-
+    if not hasattr(self,'crabJobDir'):
+      self.findCrabJobDir(self.crabDir)
+    return  self.executeCommand(command,debug ,returnOutput)
   def submit(self,debug=False):
     output = self.executeCrabCommand("-status",False,True)
     import re
@@ -167,48 +143,6 @@ class crabProcess(object):
       if  len(jSplit) > 5 and jSplit[2] == "Retrieved" and jSplit[5] == "0":
         jobs.append(jSplit[0])
     return jobs
-  def automaticResubmit(self,onlySummary = False):
-    import re
-    jobOutput = [ l for l in self.executeCrabCommand("-status",False,True) if re.match('^[0-9]+[ \t]+[YN][ \t]+[a-zA-Z]+[ \t]+',l)]
-    doneJobsGood = self.jobRetrievedGood(jobOutput); doneJobsBad = []; abortedJobs = []; downloadableJobs = []; downloadedJobsBad = [];downloadableNoCodeJobs=[]; createdJobs = [];
-    for j in jobOutput:
-      jSplit = j.split()
-      if  len(jSplit) > 5:
-        if jSplit[2] == "Retrieved" and jSplit[5] != "0":
-          downloadedJobsBad.append(jSplit[0])
-        if jSplit[2] == "Done" and jSplit[5] != "0":
-          doneJobsBad.append(jSplit[0]) 
-      if jSplit[2] == "Aborted":
-        abortedJobs.append(jSplit[0])
-      if len(jSplit) > 5 and jSplit[2]  == "Done" and jSplit[3]  == "Terminated" and jSplit[5] == "0": 
-        downloadableJobs.append(jSplit[0])
-      if  len(jSplit) < 6 and len(jSplit) > 2:
-        if  jSplit[2]  == "Done" and jSplit[3]  == "Terminated" :
-          downloadableNoCodeJobs.append(jSplit[0])
-        if jSplit[3] == "Created" and jSplit[2] == "Created":
-          createdJobs.append(jSplit[0])
-    if not onlySummary:
-      print " downloadableJobs ",downloadableJobs
-      print "doneJobsGood ",doneJobsGood
-      print "doneJobsBad ", doneJobsBad 
-      print "abortedJobs ",abortedJobs
-      print "downloadedJobsBad ",downloadedJobsBad
-      print "downloadableNoCodeJobs", downloadableNoCodeJobs
-      print "back to Created  ",createdJobs
-    if len(doneJobsBad+downloadableJobs+downloadableNoCodeJobs):
-      self.executeCrabCommand("-get "+",".join(doneJobsBad+downloadableJobs+downloadableNoCodeJobs),debug = True and not onlySummary )
-    if len(doneJobsBad+downloadedJobsBad+abortedJobs) > 0:
-      #self.executeCrabCommand("-resubmit "+",".join(doneJobsBad+downloadedJobsBad+abortedJobs),debug = True and not onlySummary)
-      self.multiCommand('-resubmit',doneJobsBad+downloadedJobsBad+abortedJobs,debug = True and not onlySummary)
-    if len(createdJobs) > 0:
-      self.multiCommand('-submit',createdJobs,debug = True and not onlySummary)
-    if onlySummary:
-      print "CrabJob ",self.postfix
-      print "jobs done/retrieved good ",",".join(doneJobsGood+downloadableJobs)
-      print len(doneJobsGood+downloadableJobs),"/",len(jobOutput)
-      print "jobs resubmitted ",",".join(doneJobsBad+downloadedJobsBad+abortedJobs)
-      print "just downloaded ",",".join(downloadableNoCodeJobs)
-      print "back to Created  ",",".join(createdJobs)
   def getAcGridDir(self):
     import os,subprocess
     if self.crabCfg["USER"].has_key("user_remote_dir"):
