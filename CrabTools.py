@@ -1,4 +1,6 @@
 ### default dict
+import sys,os
+sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'MyCrabTools')
 import crabDeamonTools
 crabCfg = {
   "CRAB" :{
@@ -119,15 +121,16 @@ class crabProcess(crabDeamonTools.crabDeamon):
     return self.crabCfg
   def create(self):
     self.executeCrabCommand("-create",debug = True)
-    crabDeamon.findCrabJobDir(self.crabDir) 
+    self.findCrabJobDir(self.crabDir) 
   def changeCrabJobDir(self,newDir):
     self.crabJobDir = newDir
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
     if not hasattr(self,'crabDir'):
       self.createCrabDir()
-    if not hasattr(self,'crabJobDir'):
-      self.findCrabJobDir(self.crabDir)
-    return  self.executeCommand(command,debug ,returnOutput)
+    if not hasattr(self,'crabJobDir') or not self.crabJobDir or self.crabJobDir == '': 
+      return  self.executeCommand(command,debug ,returnOutput,where=self.crabDir)
+    else:
+      return  self.executeCommand(command,debug ,returnOutput)
   def submit(self,debug=False):
     output = self.executeCrabCommand("-status",False,True)
     import re
@@ -135,14 +138,6 @@ class crabProcess(crabDeamonTools.crabDeamon):
     if debug:
       print listJobs
     self.multiCommand('-submit',listJobs,True)
-  def jobRetrievedGood(self,jobStatusS = None):
-    import re
-    jobs = []
-    for  j in jobStatusS if jobStatusS else [ l for l in self.executeCrabCommand("-status",False,True) if re.match('^[0-9]+[ \t]+[YN][ \t]+[a-zA-Z]+[ \t]+',l)]:
-      jSplit = j.split()
-      if  len(jSplit) > 5 and jSplit[2] == "Retrieved" and jSplit[5] == "0":
-        jobs.append(jSplit[0])
-    return jobs
   def getAcGridDir(self):
     import os,subprocess
     if self.crabCfg["USER"].has_key("user_remote_dir"):
