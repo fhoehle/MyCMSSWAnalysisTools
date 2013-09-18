@@ -1,20 +1,61 @@
 # tools for run cmssw analysis
 import FWCore.ParameterSet.Config as cms
-import sys,imp,subprocess,re,os
+import sys,imp,subprocess,re,os,ROOT
+ROOT.TH1.AddDirectory(False)
+sys.path.append(os.getenv('HOME')+'/PyRoot_Helpers/PyRoot_Functions')
+import MyHistFunctions_cfi as MyHistFunctions
 def addPostFixToFilename(name,postfix):
   from os import path
   splittedName = path.splitext(name)
   return splittedName[0] + (("_"+postfix) if postfix != "" else "") + splittedName[1]
 #########################
 class analysisSample (object):
-  def __init__(self):
-    self.xSec = None; self.processedLumi = None; self.TFileServiceFile = None; self.lumiForPlots = None
-  def loadFromDataset(self,dS):
+  def __init__(self,lumiForPlots):
+    self.lumiForPlots = lumiForPlots
+  def loadFromDataset(self,dS,mergeLabel = None):
     if not isinstance(dS,list):
       dS = [dS]
     self.datasets=dS
-  def merge(self,mergeLabel):
-    self.mergeLabel  
+    if len(dS) > 1 and not mergeLabel:
+      print "provide a merge label"
+      return
+    if len(dS) > 1:
+      self.label = mergeLabel
+      self.mergedSample = True
+    else:
+      self.mergedSample = False
+      self.__dict__.update(dS[0])
+      self.processedLumi = float(self.processedEvents)/float(self.xSec)
+  def merge(self,color = None ):
+    self.color = color if color else self.datasets[0]["color"]
+    self.xSec = sum([float(ds["xSec"]) for ds in self.datasets])
+    if not self.lumiForPlots:
+      print "no lumi for merge given"
+      return
+    self.processedLumi = self.lumiForPlots 
+  def scalePlot(self,ds,plot):
+     if not ds["processedEvents"] or not ds["xSec"] or not self.lumiForPlots:
+       print "lumi for scaling not given "
+       return
+     plot.Sumw2()
+     plot.Scale(self.lumiForPlots/(float(ds["processedEvents"])/float(ds["xSec"])))
+     return plot
+  def get(self,plotname):
+    if self.mergedSample:
+      plot = None;plot = ROOT.TFile(self.datasets[0]["file"]).Get(plotname);plot = plot.Clone(plot.GetName()+"_mergedTo_"+self.label)
+      plot = self.scalePlot(self.datasets[0],plot)
+      for ds in self.datasets[1:]:
+        tmpP = ROOT.TFile(ds["file"]).Get(plotname);tmpP = tmpP.Clone(tmpP.GetName()+"_isMergedTo_"+self.label)
+        MyHistFunctions.addOverFlowToLastBin(tmpP)
+        tmpP = self.scalePlot(ds,tmpP)
+        plot.Add(tmpP)
+      plot.SetLineColor(self.color)
+      return plot
+    else:
+      plot = ROOT.TFile(self.datasets[0]["file"]).Get(plotname);plot = plot.Clone(plot.GetName()+"_gotByAS")
+      MyHistFunctions.addOverFlowToLastBin(plot)
+      plot.SetLineColor(self.color)
+      return self.scalePlot(self.datasets[0],plot)
 ############################
 class sample(object):
   def __init__(self,filenames,label,xSec,postfix = "",maxEvents=-1,dataset = None):
