@@ -58,25 +58,43 @@ class analysisSample (object):
       return self.scalePlot(self.datasets[0],plot)
 ############################
 class sample(object):
-  def __init__(self,filenames,label,xSec,postfix = "",maxEvents=-1,dataset = None):
+  def __init__(self,filenames=[],label=None,xSec=None,postfix = "",maxEvents=-1,datasetName = None):
     self.filenames = filenames
     self.postfix = postfix
     self.label = label
-    self.xSec = float(xSec)
+    self.xSec = float(xSec) if xSec else None
     self.maxEvents = maxEvents
-    self.dataset = dataset
+    self.datasetName = datasetName
     if not isinstance(filenames,list):
      self.filenames = [filenames]
+     print "correcting",filenames
+    else:
+      print "is already list"
+  def loadDict(self,dictionary):
+    for k in self.__dict__.keys():
+     if dictionary.has_key(k):
+       self.__dict__[k]=dictionary[k]
   def getInputfiles(self):
-    inputFiles = cms.untracked.vstring([f for f in self.filenames if f.startswith('file:/') or  f.startswith('/store/')])
+    print "filenames, ",self.filenames,","
+    inputFiles = None
+    if self.filenames != [None] or self.filenames != [] or self.filenames:
+      inputFiles = cms.untracked.vstring([f for f in self.filenames if f and (f.startswith('file:/') or  f.startswith('/store/')) ])
     if len(self.filenames) == len(inputFiles):
       return inputFiles
-    else:
+    elif not self.datasetName:
       sys.exit('inputFiles not okay')
+    else:
+      return None
   def setDataset(self):
-    self.dataset = getDatasetName(self)
+    if self.datasetName:
+      print "already datasetName given"
+    else:
+      self.datasetName = getDatasetName(self)
 ####################
 def getDatasetName(sample):
+  if not hasattr(sample,'filenames') or sample.filenames == None or len(sample.filenames) == 0:
+    print 'sample.filenames not given for sample ',sample.label
+    return None
   import sys,os,re
   sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'/MyCMSSWAnalysisTools/MyDASTools')
   import dasTools
@@ -85,7 +103,7 @@ def getDatasetName(sample):
   print "searching dataset for ",fileIdentifier
   datasets = myDasClient.getDataSetNameForFile("*"+fileIdentifier)
   print "found ",datasets
-  return datasets[0]
+  return datasets[0] if len(datasets)> 0 else None
 ########################
 def executeCommandSameEnv(command):
  import os,subprocess
@@ -149,7 +167,12 @@ class processSample(object):
     from os import path
     self.loadTmpCfg()
     #adapt input
-    self.tmpCfgFileLoaded.process.source.fileNames = self.samp.getInputfiles();self.tmpCfgFileLoaded.process.maxEvents.input.setValue(self.samp.maxEvents)
+    print self.samp.getInputfiles()
+    if self.samp.getInputfiles() and  self.samp.getInputfiles() != cms.untracked.vstring([]) and self.samp.getInputfiles() != cms.untracked.vstring([None]) : 
+      self.tmpCfgFileLoaded.process.source.fileNames = self.samp.getInputfiles();
+    else:
+      print "not inputFiles set. dataset given ",self.samp.datasetName
+    self.tmpCfgFileLoaded.process.maxEvents.input.setValue(self.samp.maxEvents)
     cfgOutputFolderFWK = 'file:'+path.realpath(self.cfgOutputFolder)
     #adapt output
     for outItem in self.tmpCfgFileLoaded.process.outputModules.values():
