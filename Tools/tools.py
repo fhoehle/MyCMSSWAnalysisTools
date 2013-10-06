@@ -205,7 +205,9 @@ class processSample(object):
     self.newCfgName = newCfgFileName
     if self.debug:
       print "created newCfgName ",self.newCfgName
-  # create new file on disk 
+  # create new file on disk
+  def gettriggersUsedForAnalysis (self):
+    return self.tmpCfgFileLoaded.triggersUsedForAnalysis if hasattr(self.tmpCfgFileLoaded,'triggersUsedForAnalysis') else None
   def createNewCfg (self):
     if not hasattr(self,'newCfgName') or self.newCfgName == None:
       self.createNewCfgFileName()

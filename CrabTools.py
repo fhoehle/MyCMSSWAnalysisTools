@@ -92,7 +92,6 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.crabCfgFilename = cCfg.name
     if self.crabCfg.has_key('CMSSW') and self.crabCfg['CMSSW'].has_key('lumi_mask') and self.crabCfg['CMSSW']['lumi_mask']:
       from shutil import copy2
-      
       print "copying lumi_mask: ", self.crabCfg['CMSSW']['lumi_mask']," to ",os.path.dirname(cCfg.name) + os.path.sep
       copy2(self.crabCfg['CMSSW']['lumi_mask'],os.path.dirname(cCfg.name) + os.path.sep)
     return cCfg.name 
