@@ -19,12 +19,16 @@ class cmsswAnalysis(object):
     parser.add_argument('--specificSamples',type=str,default=None,help="only process given samples given by labels")
     parser.add_argument('--debug',action='store_true',default=False,help=' activate debug modus ')
     parser.add_argument('--usage',action='store_true',default=False,help='help message')
+    parser.add_argument('--showAvailableSamples',action='store_true',default=False,help='show samples which can be processed')
     args = parser.parse_known_args()
     args,notKnownArgs = args
     self.debug = args.debug
     print args.usage
     if args.usage:
       parser.print_help()
+      sys.exit(0)
+    if args.showAvailableSamples:
+      print 'available samples: ',self.samples.keys()
       sys.exit(0)
     print "args ",args
     self.notKnownArgs = notKnownArgs
@@ -77,6 +81,7 @@ class cmsswAnalysis(object):
       cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
       processSample =  myTools.processSample(cfgSamp)
       sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
+      sample.loadDict(sampDict)
       sample.__dict__["color"]=sampDict["color"]
       processSample.applyChanges(sample)
       print "processing ",postfix," ",sampDict["localFile"]
@@ -93,7 +98,7 @@ class cmsswAnalysis(object):
         sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'MyCMSSWAnalysisTools')
         import CrabTools
         sample.setDataset()
-        crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.dataset,self.options["outputPath"],self.timeStamp,addGridDir="test")
+        crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
         crabP.setCrabDir(sample.postfix,self.timeStamp,self.options["outputPath"])
         crabP.createCrabCfg(sampDict.get("crabConfig"))
         crabCfgFilename = crabP.createCrabDir()
