@@ -36,5 +36,6 @@ for idx in ${!pkgs[*]}; do
   fi
   cd $CMSSW_BASE
 done
-
+#cd $CMSSW_BASE/src 
+#addpkg FWCore/PythonUtilities
 
