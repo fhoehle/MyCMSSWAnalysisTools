@@ -118,12 +118,14 @@ class processSample(object):
 #    self.workLoc = os.getenv('PWD') if workLoc == "" else workLoc
 #    from os import path
     self.workLoc = path.dirname(self.cfgFileName) + path.sep
+  def loadInputCfg(self):
+    with open(self.cfgFileName,'r') as cfgFile:
+      return imp.load_source('cfgTMP',self.cfgFileName,cfgFile);
   def createTmpCfg(self):
     if self.tmpCfg != None:
       print "tmpCfg already exists ",self.tmpCfg 
       return 
-    cfgFile = open(self.cfgFileName,'r') #copy.deepcopy(f);f.close()
-    cfgFileLoaded = imp.load_source('cfgTMP',self.cfgFileName,cfgFile);cfgFile.close()
+    cfgFileLoaded = self.loadInputCfg()
     from os import path
     tmpCfgName = addPostFixToFilename(self.cfgFileName,'_compiledInputCfg_TMP')
     tmpCfg = open(tmpCfgName , 'w')
@@ -206,8 +208,9 @@ class processSample(object):
     if self.debug:
       print "created newCfgName ",self.newCfgName
   # create new file on disk
-  def gettriggersUsedForAnalysis (self):
-    return self.tmpCfgFileLoaded.triggersUsedForAnalysis if hasattr(self.tmpCfgFileLoaded,'triggersUsedForAnalysis') else None
+  def getTriggersUsedForAnalysis (self):
+    inputLoaded = self.loadInputCfg()
+    return inputLoaded.triggersUsedForAnalysis if hasattr(inputLoaded,'triggersUsedForAnalysis') else None
   def createNewCfg (self):
     if not hasattr(self,'newCfgName') or self.newCfgName == None:
       self.createNewCfgFileName()
@@ -312,6 +315,13 @@ def compileCfg(cfg,options,postfix=""):
     print "python cfg creation done"
     return cfgDumpPython
 ###
+def _pretty_lines(self, keys):
+        size = max(len(k) for k in keys) + 2
+        return "{\n" + ",\n".join(
+                    ("%"+str(size)+"s: ")%("'"+k+"'")
+                    + repr(getattr(self, k))
+                    for k in keys
+                ) + ",\n}"
 def getTimeStamp():
   import datetime,time
   return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
