@@ -20,6 +20,7 @@ class cmsswAnalysis(object):
     parser.add_argument('--debug',action='store_true',default=False,help=' activate debug modus ')
     parser.add_argument('--usage',action='store_true',default=False,help='help message')
     parser.add_argument('--showAvailableSamples',action='store_true',default=False,help='show samples which can be processed')
+    parser.add_argument('--runOnData',action='store_true',default=False,help=' activate running on data, will be transmitted to addOptions of cfg')
     args = parser.parse_known_args()
     args,notKnownArgs = args
     self.debug = args.debug
@@ -41,7 +42,7 @@ class cmsswAnalysis(object):
     self.runGrid = args.runGrid
     self.specificSamples = args.specificSamples
     self.dontExec = args.dontExec
-    self.addOptions=args.addOptions
+    self.addOptions=args.addOptions+(' runOnData=True' if args.runOnData else '')
     for opt in args.__dict__.keys():
        myTools.removeOptFromArgv(opt)
 #      if opt in ("--help"):
@@ -61,6 +62,7 @@ class cmsswAnalysis(object):
         options["outputPath"]= os.path.realpath(options["outputPath"])+"_"+self.timeStamp+os.path.sep 
       print options["outputPath"]
     self.options =options
+    self.args = args
     if self.debug:
       print self.__dict__
 ## preparing cfg with additional options
@@ -78,6 +80,12 @@ class cmsswAnalysis(object):
       remainingOpts = myTools.removeAddOptions(self.options.keys(),self.addOptions+(" "+sampDict["addOptions"]) if sampDict.has_key("addOptions") else "")
       print "remainingOpts ",remainingOpts
       print "notKnown ",self.notKnownArgs
+      analysisTriggers = myTools.processSample(tmpCfg).getTriggersUsedForAnalysis()
+      if self.args.runOnData:
+        dataTriggers = analysisTriggers
+        print "running On Data: available triggers for channels: ",dataTriggers.keys()
+        for k,dct in dataTriggers.iteritems():
+          print "ch ",k," ",dataTriggers[k]['data']
       cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
       processSample =  myTools.processSample(cfgSamp)
       sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))

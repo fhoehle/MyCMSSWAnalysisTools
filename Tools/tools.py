@@ -209,7 +209,10 @@ class processSample(object):
       print "created newCfgName ",self.newCfgName
   # create new file on disk
   def getTriggersUsedForAnalysis (self):
+    from sys import stdout
+    origSTDOUT = stdout; stdout = NullService()
     inputLoaded = self.loadInputCfg()
+    stdout = origSTDOUT
     return inputLoaded.triggersUsedForAnalysis if hasattr(inputLoaded,'triggersUsedForAnalysis') else None
   def createNewCfg (self):
     if not hasattr(self,'newCfgName') or self.newCfgName == None:
@@ -322,6 +325,9 @@ def _pretty_lines(self, keys):
                     + repr(getattr(self, k))
                     for k in keys
                 ) + ",\n}"
+class NullService():
+   def write(self,s):
+     pass
 def getTimeStamp():
   import datetime,time
   return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
