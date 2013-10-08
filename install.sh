@@ -36,5 +36,8 @@ for idx in ${!pkgs[*]}; do
   fi
   cd $CMSSW_BASE
 done
+cd $HOME
+git clone git@github.com:fhoehle/PyRoot_Helpers.git
+cd $CMSSW_BASE
 
 
