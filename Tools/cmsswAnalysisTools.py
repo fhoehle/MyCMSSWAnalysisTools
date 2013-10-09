@@ -4,6 +4,7 @@ import FWCore.ParameterSet.Config as cms
 import sys,imp,subprocess,os,getopt,re,argparse
 sys.path.append(os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/Tools')
 import tools as myTools
+import runRangesManagment
 ####
 class cmsswAnalysis(object):
   def __init__(self,samples,cfg):
@@ -83,9 +84,15 @@ class cmsswAnalysis(object):
       analysisTriggers = myTools.processSample(tmpCfg).getTriggersUsedForAnalysis()
       if self.args.runOnData:
         dataTriggers = analysisTriggers
+        runRanges = []
         print "running On Data: available triggers for channels: ",dataTriggers.keys()
         for k,dct in dataTriggers.iteritems():
           print "ch ",k," ",dataTriggers[k]['data']
+          runRanges.extend(dataTriggers[k]['data'].values())
+      triggerRunRanges = runRangesManagment.runRangeManager(runRanges)
+      triggerRunRanges.calcTriggerRunRanges()
+      print "runRanges ",runRanges
+      print "constTriggerRanges ",triggerRunRanges.ranges
       cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
       processSample =  myTools.processSample(cfgSamp)
       sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
