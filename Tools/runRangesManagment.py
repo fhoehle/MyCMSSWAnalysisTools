@@ -21,21 +21,30 @@ class runRangeManager(object):
     self.ranges=[]
     while len(borders) != 0:
       if self.debug:
-        print "debug begin borders ",borders," mins ", mins ," maxs ",maxs," lowerLimit ",lowerLimit, " openRanges ",[ [r.min,r.max] for r in openRanges ]," ranges ",self.ranges
+        print "debug begin borders ",borders
+	print " mins ", mins 
+	print " maxs ",maxs
+	print " lowerLimit ",lowerLimit, " openRanges ",[ [r.min,r.max] for r in openRanges ]
+	print " ranges ",self.ranges
       if (len(mins) and borders[0] == mins[0]) or (borders[0] == maxs[0]):
         if len(mins) and borders[0] == mins[0]:
-          for r in runRanges:
+	  for r in runRanges:
             if r.min == borders[0]:
               openRanges.append(r)
-              runRanges.remove(r) 
+          runRanges = filter (lambda r : r.min != borders[0],runRanges)
           self.ranges.append([lowerLimit,mins[0] - 1])
           lowerLimit = int(mins[0])
           mins.remove(mins[0])
         if borders[0] == maxs[0]:
-          for r in openRanges:
-	    if r.max ==  borders[0]:
-	      openRanges.remove(r)
-          self.ranges.append([lowerLimit,maxs[0]])  
+          openRanges = filter( lambda r:r.max != borders[0],openRanges)
+          self.ranges.append([lowerLimit,maxs[0]]) 
+          if len(mins) and maxs[0] == mins[0]-1:
+            for r in runRanges:
+              if r.min == mins[0]:
+                openRanges.append(r)
+            runRanges = filter (lambda r : r.min !=  mins[0],runRanges)
+	    borders.remove( mins[0])
+            mins.remove(mins[0]) 
           lowerLimit= maxs[0]+1
           if len(openRanges) == 0 and len(mins):
             lowerLimit =  mins[0];mins.remove(mins[0])
@@ -46,7 +55,12 @@ class runRangeManager(object):
         print "something failed, runRangeManager"
       borders.pop(0)
       if self.debug:
-        print "debug end borders ",borders," mins ", mins ," maxs ",maxs," lowerLimit ",lowerLimit, " openRanges ",[ [r.min,r.max] for r in openRanges ]," ranges ",self.ranges
+        print "debug end borders ",borders
+	print " mins ", mins 
+	print " maxs ",maxs
+	print " lowerLimit ",lowerLimit, " openRanges ",[ [r.min,r.max] for r in openRanges ]
+	print" ranges ",self.ranges
+        print " "
 #################################
 class runRange(object):
   def __init__(self,min,max):
