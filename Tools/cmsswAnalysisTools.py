@@ -57,13 +57,16 @@ class cmsswAnalysis(object):
     self.timeStamp = myTools.getTimeStamp()
     
     options["outputPath"]=os.getenv("PWD")+os.path.sep+'TMP_'+self.timeStamp+os.path.sep
+
     for opt in self.addOptions.split():
+      #print "opt ",opt
       reOpt = re.match('([^=]*)=([^=]*)',opt)
-      if options.has_key(reOpt.group(1)):
+      if reOpt:#options.has_key(reOpt.group(1)):
         options[reOpt.group(1)]=reOpt.group(2)
       if not options["outputPath"].endswith(self.timeStamp+os.path.sep):
         options["outputPath"]= os.path.realpath(options["outputPath"])+"_"+self.timeStamp+os.path.sep 
       print options["outputPath"]
+    print "all options ",options
     self.options =options
     self.args = args
     if self.debug:
@@ -78,10 +81,12 @@ class cmsswAnalysis(object):
     ####
     commandList = []
     dontExecCrab = self.dontExec
-
+    print "sarting analysis"
     for postfix,sampDict in self.samples.iteritems()if self.specificSamples == None else [(p,s) for p,s in self.samples.iteritems() if p in self.specificSamples ]:
-      remainingOpts = myTools.removeAddOptions(self.options.keys(),self.addOptions+(" "+sampDict["addOptions"]) if sampDict.has_key("addOptions") else "")
-      print "remainingOpts ",remainingOpts
+      print "options before ",self.options.keys()," self.addOptions ",self.addOptions," samp ",(sampDict["addOptions"]) if sampDict.has_key("addOptions") else ""
+      remainingOpts = myTools.removeAddOptions(['outputPath'],self.addOptions+(" "+sampDict["addOptions"] if sampDict.has_key("addOptions") else ""))
+      #remainingOpts = self.addOptions+(" "+sampDict["addOptions"] if sampDict.has_key("addOptions") else "")
+      print "remainingOptsTest ",remainingOpts
       print "notKnown ",self.notKnownArgs
       analysisTriggers = myTools.processSample(tmpCfg).getTriggersUsedForAnalysis()
       if self.args.runOnData:
@@ -89,24 +94,28 @@ class cmsswAnalysis(object):
         print "running On Data: available triggers for channels: ",dataTriggers.keys()
         for k,dct in dataTriggers.iteritems():
           print "ch ",k," ",dataTriggers[k]['data']
-      cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
-      processSample =  myTools.processSample(cfgSamp)
-      sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
-      sample.loadDict(sampDict)
-      sample.__dict__["color"]=sampDict["color"]
-      processSample.applyChanges(sample)
-      print "processing ",postfix," ",sampDict["localFile"]
-      sys.stdout.flush()
+      print "remainingOpts ",remainingOpts
+
       if not self.runGrid:
+        if self.args.runOnData:  
+          import lumiListFromFile
+          fileRuns = lumiListFromFile.getLumiListFromFile('dcap://grid-dcap.physik.rwth-aachen.de/pnfs/physik.rwth-aachen.de/cms'+sampDict["localFile"] if sampDict["localFile"].startswith('/store/') else sampDict["localFile"][5:]).getRuns()
+          remainingOpts+=" runRange="+fileRuns[0]+"-"+fileRuns[-1]
+        cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
+        processSample =  myTools.processSample(cfgSamp)
+        sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
+        sample.loadDict(sampDict)
+        sample.__dict__["color"]=sampDict["color"]
+        processSample.applyChanges(sample)
+        print "processing ",postfix," ",sampDict["localFile"]
+        sys.stdout.flush()
         if not ( self.dontExec and not self.runParallel):
           commandList.append(processSample.runSample(not self.runParallel))
         self.bookKeeping.bookKeep(processSample)
       else:
-        processSample.setOutputFilesGrid()
-        processSample.createNewCfg()
-        self.bookKeeping.bookKeep(processSample)
-        sys.stdout.flush()
-        sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'MyCMSSWAnalysisTools')
+        sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
+        sample.loadDict(sampDict)
+        sample.__dict__["color"]=sampDict["color"]
         import CrabTools
         sample.setDataset()
         if self.args.runOnData:
@@ -143,6 +152,17 @@ class cmsswAnalysis(object):
           crabPs = []    
           for shJ in shortendJSONs:
             shJ.writeJSON(shJ.JSONfileName) 
+            cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts+" runRange="+shJ.getRuns()[0]+"-"+shJ.getRuns()[-1],postfix+"_"+shJ.label ) 
+            processSample =  myTools.processSample(cfgSamp)
+            processSample.applyChanges(sample)
+            print "processing ",postfix," ",sampDict["localFile"]
+            sys.stdout.flush()
+            processSample.setOutputFilesGrid()
+            processSample.createNewCfg()
+            self.bookKeeping.bookKeep(processSample)
+            sys.stdout.flush()
+            sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'MyCMSSWAnalysisTools')
+
             sampDict["crabConfig"]["CMSSW"]["lumi_mask"]=shJ.JSONfileName
 	    sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=10
             crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
@@ -152,7 +172,9 @@ class cmsswAnalysis(object):
                 if CrabTools.crabCfg["CMSSW"].has_key(kD):
                         del(CrabTools.crabCfg["CMSSW"][kD])
             crabPs.append(crabP)
-            #print "this many lumis ",len(shJ.getLumis())
+ 
+
+           #print "this many lumis ",len(shJ.getLumis())
         else:
           crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
           crabP.setCrabDir(sample.postfix,self.timeStamp,self.options["outputPath"])
@@ -163,7 +185,7 @@ class cmsswAnalysis(object):
           crabCfgFilename = crabP.createCrabDir()
           crabP.writeCrabCfg()
           crabP.create()#executeCrabCommand("-create",debug = True) 
-          crabJsonFile = self.options["outputPath"]+"/"+postfix+"_"+self.timeStamp+"_CrabCfg.json"
+          crabJsonFile = self.options["outputPath"]+"/"+crabP.postfix+"_"+self.timeStamp+"_CrabCfg.json"
           CrabTools.saveCrabProp(crabP,crabJsonFile)
           if not dontExecCrab:
               crabP.submit()
