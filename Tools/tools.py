@@ -169,9 +169,10 @@ class processSample(object):
     from os import path
     self.loadTmpCfg()
     #adapt input
-    print self.samp.getInputfiles()
-    if self.samp.getInputfiles() and  self.samp.getInputfiles() != cms.untracked.vstring([]) and self.samp.getInputfiles() != cms.untracked.vstring([None]) : 
-      self.tmpCfgFileLoaded.process.source.fileNames = self.samp.getInputfiles();
+    tmpInputFIles = self.samp.getInputfiles()
+    print "input from Sample ",tmpInputFIles
+    if tmpInputFIles and  len(tmpInputFIles) : 
+      self.tmpCfgFileLoaded.process.source.fileNames =  tmpInputFIles;
     else:
       print "not inputFiles set. dataset given ",self.samp.datasetName
     self.tmpCfgFileLoaded.process.maxEvents.input.setValue(self.samp.maxEvents)
@@ -310,10 +311,12 @@ def compileCfg(cfg,options,postfix=""):
   with open(cpCfg,"a") as cfgAddLine: 
     cfgAddLine.write('myTmpFile = open ("'+cfgDumpPython+'","w"); myTmpFile.write(process.dumpPython()); myTmpFile.close() # added by script in order to dump/compile cfg');
   import subprocess
+  print "compiling with these options ",options
   buildFile = subprocess.Popen(["python "+cpCfg+" "+options],shell=True,stdout=subprocess.PIPE,env=os.environ)
   buildFile.wait()
   errorcode = buildFile.returncode
   if errorcode != 0:
+    print buildFile.communicate()[0]
     sys.exit("failed building config with "+str(errorcode))
     return 
   else:
