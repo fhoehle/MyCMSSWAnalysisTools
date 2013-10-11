@@ -86,6 +86,7 @@ class cmsswAnalysis(object):
         print "running On Data: available triggers for channels: ",dataTriggers.keys()
         for k,dct in dataTriggers.iteritems():
           print "ch ",k," ",dataTriggers[k]['data']
+       
       cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
       processSample =  myTools.processSample(cfgSamp)
       sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
