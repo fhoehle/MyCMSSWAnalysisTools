@@ -2,8 +2,11 @@
 # run cmssw analysis
 import FWCore.ParameterSet.Config as cms
 import sys,imp,subprocess,os,getopt,re,argparse
-sys.path.append(os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/Tools')
+sys.path.extend([os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/Tools',os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools'])
+import MyDASTools.dasTools as dasTools
 import tools as myTools
+import jsonTools 
+import runRangesManagment
 ####
 class cmsswAnalysis(object):
   def __init__(self,samples,cfg):
@@ -86,7 +89,6 @@ class cmsswAnalysis(object):
         print "running On Data: available triggers for channels: ",dataTriggers.keys()
         for k,dct in dataTriggers.iteritems():
           print "ch ",k," ",dataTriggers[k]['data']
-       
       cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
       processSample =  myTools.processSample(cfgSamp)
       sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
@@ -107,18 +109,66 @@ class cmsswAnalysis(object):
         sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'MyCMSSWAnalysisTools')
         import CrabTools
         sample.setDataset()
-        crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
-        crabP.setCrabDir(sample.postfix,self.timeStamp,self.options["outputPath"])
-        crabP.createCrabCfg(sampDict.get("crabConfig"))
-        crabCfgFilename = crabP.createCrabDir()
-        crabP.writeCrabCfg()
-        crabP.create()#executeCrabCommand("-create",debug = True) 
-        crabJsonFile = self.options["outputPath"]+"/"+postfix+"_"+self.timeStamp+"_CrabCfg.json"
-        CrabTools.saveCrabProp(crabP,crabJsonFile)
-        if not dontExecCrab:
-          crabP.submit()
-          crabP.executeCrabCommand("-status")
-        self.bookKeeping.addCrab(crabJsonFile)
+        if self.args.runOnData:
+          dataTriggers = analysisTriggers
+          runRanges = []
+          print "running On Data: available triggers for channels: ",dataTriggers.keys()
+          for k,dct in dataTriggers.iteritems():
+            print "ch ",k," ",dataTriggers[k]['data']
+            runRanges.extend(dataTriggers[k]['data'].values())
+          triggerRunRanges = runRangesManagment.runRangeManager(runRanges)
+          triggerRunRanges.calcTriggerRunRanges()
+          print "runRanges ",runRanges
+          print "constTriggerRanges ",triggerRunRanges.ranges
+          print "processing sample ",sample.datasetName
+          myDASClient = dasTools.myDasClient()
+ 	  DatasetLumilist = myDASClient.getJsonOfDataset(sample.datasetName)
+	  onlyRunsDataset = [ int(r) for r in DatasetLumilist.getRuns()]
+          print "onlyRuns ",onlyRunsDataset
+          JSONfilename = sampDict.get("crabConfig")["CMSSW"]["lumi_mask"]
+          JSONlumilist = jsonTools.LumiList (filename = JSONfilename)
+          onlyRunsJSONfiles = [ int(r) for r in JSONlumilist.getRuns()]
+          print "JSONfileRunsOnly ",onlyRunsJSONfiles
+          datasetAndJSON = DatasetLumilist & JSONlumilist
+          runDatasetAndJSON = [ int(r) for r in datasetAndJSON.getRuns()]
+	  print "runs in both ",runDatasetAndJSON
+	  print "runs from dataset removed ",[int(r) for r in (DatasetLumilist - datasetAndJSON).getRuns()]
+          shortendJSONs = []
+	  for runR in triggerRunRanges.ranges:
+            shortJSON = jsonTools.shortenJson(datasetAndJSON,runR[0],runR[1])
+            if len(shortJSON):             
+              shortJSONfilename = myTools.addPostFixToFilename (JSONfilename,'_'+postfix+'_part_'+str(len(shortendJSONs)))
+	      setattr(shortJSON,'JSONfileName',shortJSONfilename);setattr(shortJSON,'label','_part_'+str(len(shortendJSONs)))
+              shortendJSONs.append(shortJSON)
+          crabPs = []    
+          for shJ in shortendJSONs:
+            shJ.writeJSON(shJ.JSONfileName) 
+            sampDict["crabConfig"]["CMSSW"]["lumi_mask"]=shJ.JSONfileName
+	    sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=10
+            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
+            crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,self.options["outputPath"])
+	    keysToDelete = ['total_number_of_events',"number_of_jobs"]
+            for kD in keysToDelete:
+                if CrabTools.crabCfg["CMSSW"].has_key(kD):
+                        del(CrabTools.crabCfg["CMSSW"][kD])
+            crabPs.append(crabP)
+            #print "this many lumis ",len(shJ.getLumis())
+        else:
+          crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
+          crabP.setCrabDir(sample.postfix,self.timeStamp,self.options["outputPath"])
+          crabPs.append(crabP)
+        print "number of crabs ",len(crabPs)
+        for crabP in crabPs:
+          crabP.createCrabCfg(sampDict.get("crabConfig"))
+          crabCfgFilename = crabP.createCrabDir()
+          crabP.writeCrabCfg()
+          crabP.create()#executeCrabCommand("-create",debug = True) 
+          crabJsonFile = self.options["outputPath"]+"/"+postfix+"_"+self.timeStamp+"_CrabCfg.json"
+          CrabTools.saveCrabProp(crabP,crabJsonFile)
+          if not dontExecCrab:
+              crabP.submit()
+              crabP.executeCrabCommand("-status")
+          self.bookKeeping.addCrab(crabJsonFile)
     processSample.end()
     dontExecParallel = self.dontExec
     if self.runParallel and len(commandList) > 0:

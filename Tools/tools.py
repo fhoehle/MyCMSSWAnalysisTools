@@ -262,7 +262,9 @@ class bookKeeping():
       print "no bookKeeping, ",processSample
       return
     self.postfix = processSample.samp.postfix
-    inputFilesInfo = getFileMetaInformation(processSample.tmpCfgFileLoaded.process.source.fileNames.value())
+    inputFilesInfo = []
+    if len(processSample.tmpCfgFileLoaded.process.source.fileNames.value()):
+      inputFilesInfo = getFileMetaInformation(processSample.tmpCfgFileLoaded.process.source.fileNames.value())
     maxInputEvts = sum([f["events"] for f in inputFilesInfo])
     self.data[self.postfix] = {"totalEvents":maxInputEvts}
     maxEvtsProcess = processSample.tmpCfgFileLoaded.process.maxEvents.input.value()
