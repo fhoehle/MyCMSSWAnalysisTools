@@ -45,7 +45,10 @@ class cmsswAnalysis(object):
     self.runGrid = args.runGrid
     self.specificSamples = args.specificSamples
     self.dontExec = args.dontExec
-    self.addOptions=args.addOptions+(' runOnData=True' if args.runOnData else '')
+    self.addOptions=""
+    print "addIOpts before ",self.addOptions
+    self.addOptions=args.addOptions+( (' runOnData=True' if not 'runOnData=True' in args.addOptions and not 'runOnData=True' in self.addOptions else "") if args.runOnData else '')
+    print "addIOpts after ",self.addOptions
     for opt in args.__dict__.keys():
        myTools.removeOptFromArgv(opt)
 #      if opt in ("--help"):
@@ -97,11 +100,12 @@ class cmsswAnalysis(object):
       print "remainingOpts ",remainingOpts
 
       if not self.runGrid:
-        if self.args.runOnData:  
+        runRange=""
+        if self.args.runOnData:  # set runRange 
           import lumiListFromFile
           fileRuns = lumiListFromFile.getLumiListFromFile('dcap://grid-dcap.physik.rwth-aachen.de/pnfs/physik.rwth-aachen.de/cms'+sampDict["localFile"] if sampDict["localFile"].startswith('/store/') else sampDict["localFile"][5:]).getRuns()
-          remainingOpts+=" runRange="+fileRuns[0]+"-"+fileRuns[-1]
-        cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts,postfix ) 
+          runRange=" runRange="+fileRuns[0]+"-"+fileRuns[-1]
+        cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts) + runRange,postfix ) 
         processSample =  myTools.processSample(cfgSamp)
         sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
         sample.loadDict(sampDict)
@@ -152,7 +156,7 @@ class cmsswAnalysis(object):
           crabPs = []    
           for shJ in shortendJSONs:
             shJ.writeJSON(shJ.JSONfileName) 
-            cfgSamp = myTools.compileCfg(tmpCfg,remainingOpts+" runRange="+shJ.getRuns()[0]+"-"+shJ.getRuns()[-1],postfix+"_"+shJ.label ) 
+            cfgSamp = myTools.compileCfg(tmpCfg,,myTools.removeDuplicateCmsRunOpts(remainingOpts)+" runRange="+shJ.getRuns()[0]+"-"+shJ.getRuns()[-1],postfix+"_"+shJ.label ) 
             processSample =  myTools.processSample(cfgSamp)
             processSample.applyChanges(sample)
             print "processing ",postfix," ",sampDict["localFile"]
@@ -162,9 +166,11 @@ class cmsswAnalysis(object):
             self.bookKeeping.bookKeep(processSample)
             sys.stdout.flush()
             sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'MyCMSSWAnalysisTools')
-
+            default_lumis_per_job = 5
             sampDict["crabConfig"]["CMSSW"]["lumi_mask"]=shJ.JSONfileName
-	    sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=10
+            if not sampDict["crabConfig"]["CMSSW"].has_key("lumis_per_job"):
+              print "lumis_per_job given therefore used default ",default_lumis_per_job
+              sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=default_lumis_per_job
             crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
             crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,self.options["outputPath"])
 	    keysToDelete = ['total_number_of_events',"number_of_jobs"]

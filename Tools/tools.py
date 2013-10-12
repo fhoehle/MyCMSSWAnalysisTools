@@ -293,6 +293,12 @@ def removeAddOptions(toRemove,options):
   for key in toRemove:
    options = re.sub(key+'=[^\ ]*','',options)
   return options
+def removeDuplicateCmsRunOpts(options):
+  cleanedOpts=""
+  for opt in options.split():
+    if not opt in cleanedOpts:
+      cleanedOpts += opt
+  return cleanedOpts 
 def removeOptFromArgv(opt,rem = False):
   import sys
   optFound = next( (o for o in sys.argv if re.match('^--'+opt+'={0,1}.*',o)),None)
