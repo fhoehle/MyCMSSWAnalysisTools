@@ -317,7 +317,7 @@ def compileCfg(cfg,options,postfix=""):
   with open(cpCfg,"a") as cfgAddLine: 
     cfgAddLine.write('myTmpFile = open ("'+cfgDumpPython+'","w"); myTmpFile.write(process.dumpPython()); myTmpFile.close() # added by script in order to dump/compile cfg');
   import subprocess
-  print "compiling with these options ",options
+  print "compiling options ",options
   buildFile = subprocess.Popen(["python "+cpCfg+" "+options],shell=True,stdout=subprocess.PIPE,env=os.environ)
   buildFile.wait()
   errorcode = buildFile.returncode
