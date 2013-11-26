@@ -156,7 +156,7 @@ class cmsswAnalysis(object):
           crabPs = []    
           for shJ in shortendJSONs:
             shJ.writeJSON(shJ.JSONfileName) 
-            cfgSamp = myTools.compileCfg(tmpCfg,,myTools.removeDuplicateCmsRunOpts(remainingOpts)+" runRange="+shJ.getRuns()[0]+"-"+shJ.getRuns()[-1],postfix+"_"+shJ.label ) 
+            cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts)+" runRange="+shJ.getRuns()[0]+"-"+shJ.getRuns()[-1],postfix+"_"+shJ.label ) 
             processSample =  myTools.processSample(cfgSamp)
             processSample.applyChanges(sample)
             print "processing ",postfix," ",sampDict["localFile"]
