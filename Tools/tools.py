@@ -297,7 +297,7 @@ def removeDuplicateCmsRunOpts(options):
   cleanedOpts=""
   for opt in options.split():
     if not opt in cleanedOpts:
-      cleanedOpts += opt
+      cleanedOpts +=" "+opt
   return cleanedOpts 
 def removeOptFromArgv(opt,rem = False):
   import sys
