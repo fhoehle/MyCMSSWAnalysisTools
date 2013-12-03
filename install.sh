@@ -1,6 +1,7 @@
 #!/bin/bash
 pkgs=(
-  "MyCrabTools ./ ./intall.sh" 
+  "MyCrabTools ./ ./intall.sh"
+  "ParallelizationTools ./ .git 
 )
 cmsswVer=CMSSW_4_2_8_patch7
 ###################
@@ -29,7 +30,9 @@ set -e
 for idx in ${!pkgs[*]}; do
   cd $CMSSW_BASE/`echo ${pkgs[$idx]} | awk '{print $2}'`
   getGitPackage `echo ${pkgs[$idx]} | awk '{print $1}'`
-  git checkout `echo ${pkgs[$idx]} | awk '{print $4}'`
+  if  [ "X`echo ${pkgs[$idx]} | awk '{print $4}'`" != "X" ]; then
+   git checkout `echo ${pkgs[$idx]} | awk '{print $4}'`
+  fi
   if  [ "X`echo ${pkgs[$idx]} | awk '{print $3}'`" != "X" ]; then
     echo "calling additional command "`echo ${pkgs[$idx]} | awk '{print $3}'`
     eval `echo ${pkgs[$idx]} | awk '{print $3}'`

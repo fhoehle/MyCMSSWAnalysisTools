@@ -70,6 +70,9 @@ class cmsswAnalysis(object):
         options["outputPath"]= os.path.realpath(options["outputPath"])+"_"+self.timeStamp+os.path.sep 
       print options["outputPath"]
     print "all options ",options
+    if not self.debug:
+      self.newstdoutFile = options["outputPath"]+'log_'+self.timeStamp+'.txt'
+      print "capturing stdout in ",self.newstdoutFile
     self.options =options
     self.args = args
     if self.debug:
@@ -79,6 +82,10 @@ class cmsswAnalysis(object):
   def startAnalysis(self):
     tmpCfg = self.cfg
     tmpCfg = myTools.createWorkDirCpCfg(self.options["outputPath"],tmpCfg,self.timeStamp)
+    if not self.debug:
+      self.newstdoutFile = open(self.newstdoutFile, 'w')
+      self.stdoutBck= sys.stdout
+      sys.stdout = self.newstdoutFile
     ### json output
     self.bookKeeping = myTools.bookKeeping()
     ####
@@ -86,6 +93,7 @@ class cmsswAnalysis(object):
     dontExecCrab = self.dontExec
     print "sarting analysis"
     for postfix,sampDict in self.samples.iteritems()if self.specificSamples == None else [(p,s) for p,s in self.samples.iteritems() if p in self.specificSamples ]:
+      print "processing ",postfix," ",sampDict["localFile"]
       print "options before ",self.options.keys()," self.addOptions ",self.addOptions," samp ",(sampDict["addOptions"]) if sampDict.has_key("addOptions") else ""
       remainingOpts = myTools.removeAddOptions(['outputPath'],self.addOptions+(" "+sampDict["addOptions"] if sampDict.has_key("addOptions") else ""))
       #remainingOpts = self.addOptions+(" "+sampDict["addOptions"] if sampDict.has_key("addOptions") else "")
@@ -111,7 +119,6 @@ class cmsswAnalysis(object):
         sample.loadDict(sampDict)
         sample.__dict__["color"]=sampDict["color"]
         processSample.applyChanges(sample)
-        print "processing ",postfix," ",sampDict["localFile"]
         sys.stdout.flush()
         if not ( self.dontExec and not self.runParallel):
           commandList.append(processSample.runSample(not self.runParallel))
@@ -208,3 +215,5 @@ class cmsswAnalysis(object):
 
   ##
     self.bookKeeping.save(self.options["outputPath"]+'/',self.timeStamp)
+    if not self.debug:
+      sys.stdout=self.stdoutBck
