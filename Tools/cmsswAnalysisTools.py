@@ -141,7 +141,7 @@ class cmsswAnalysis(object):
           print "runRanges ",runRanges
           print "constTriggerRanges ",triggerRunRanges.ranges
           print "processing sample ",sample.datasetName
-          myDASClient = dasTools.myDasClient()
+          myDASClient = dasTools.myDasClient(self.debug)
  	  DatasetLumilist = myDASClient.getJsonOfDataset(sample.datasetName)
 	  onlyRunsDataset = [ int(r) for r in DatasetLumilist.getRuns()]
           print "onlyRuns ",onlyRunsDataset

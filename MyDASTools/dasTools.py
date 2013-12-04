@@ -3,7 +3,7 @@ sys.path.append(os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/MyDASTools/DAScli
 import das_client
 ##
 class myDasClient:
-  def __init__(self):
+  def __init__(self,debug=False):
     self.optmgr = das_client.DASOptionParser()
     self.opts, _ = self.optmgr.get_opt()
     self.host = self.opts.host
@@ -16,6 +16,7 @@ class myDasClient:
     self.cert = self.opts.cert
     self.das_h = self.opts.das_headers
     self.base = self.opts.base
+    self.debug=debug
   def getDataSetNameForFile(self,filename):
     jsondict = self.myQuery("dataset file = "+filename)
     return [ str(ele.get('dataset')[0].get('name')) for ele in jsondict.get('data')]
@@ -32,37 +33,18 @@ class myDasClient:
   def myQuery(self,query):
     return das_client.get_data(self.host, query , self.idx, self.limit , self.debug, self.thr, self.ckey, self.cert)
   def getJsonOfDataset(self,datasetName,debug=False):
-    datasetBlocks = self.myQuery('block dataset = '+datasetName)['data']
-    print "processing ",len(datasetBlocks) ,"block of ",datasetName
-    lumiDict = {}
-    for block in [ b['block'] for b in datasetBlocks]:
-      if len(block) < 1: # or block[0]['name'] != block[1]['name']:
-        print 'block name result wrong ',block
+    runsAndLumisJson = self.myQuery('run lumi dataset = '+datasetName)['data']
+    print "processing ",len(runsAndLumisJson) ," runs of ",datasetName
+    compactList = {}
+    if self.debug:
+      print runsAndLumisJson
+    for rJson in runsAndLumisJson:
+      if self.debug:
+        print rJson
+      if len(rJson["run"]) != 1 or len(rJson['lumi']) != 1:
+        print 'run query result wrong ',rJson
         continue
-      blockName = block[0]['name']
-      print 'processing block ',blockName 
-      lumisOfBlock = self.myQuery('lumi block = '+blockName)['data']
-      for lumiRuns in [l['lumi'] for l in lumisOfBlock]:
-        if len(lumiRuns) < 1: # or lumi[0]['number'] != lumi[1]['number']:
-          print 'lumiRuns result wrong ',lumiRuns
-          continue
-        #print len(lumiRuns)," n lumi ",lumiRuns[0]['number']
-        for lumi in lumiRuns:
-          lumiNum=lumi['number'];lumiRunNumber=str(lumi['run_number'])
-          #if len(lumiRuns) > 1:
-          #  print 'lumiNum ',lumiNum," lumiRunNumber ",lumiRunNumber," blockName ",blockName," ",lumi['file']
-          #if lumiNum==603 and lumiRunNumber == '163255':
-          #  print 'err lumiNum ',lumiNum," lumiRunNumber ",lumiRunNumber," blockName ",blockName," ",lumi['file']
-          #print lumisOfBlock
-          if not lumiDict.has_key(lumiRunNumber):
-            lumiDict[lumiRunNumber]=[]
-          if lumiNum in lumiDict[lumiRunNumber]:
-            print 'error lumi already there ', lumiRunNumber," ",lumiNum," ",blockName," continuing"
-            #sys.exit('stop')
-          lumiDict[lumiRunNumber].append(lumiNum)
-    for k in lumiDict.keys():
-      lumiDict[k].sort(key=lambda l : float(l))
+      compactList[rJson["run"][0]["run_number"]]=rJson["lumi"][0]["number"]
     from FWCore.PythonUtilities.LumiList import LumiList
-    return LumiList(runsAndLumis=lumiDict)
-        
+    return LumiList(compactList=compactList)
 
