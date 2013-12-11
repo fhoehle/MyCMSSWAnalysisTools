@@ -155,13 +155,23 @@ class cmsswAnalysis(object):
 	  print "runs from dataset removed ",[int(r) for r in (DatasetLumilist - datasetAndJSON).getRuns()]
           shortendJSONs = []
 	  for runR in triggerRunRanges.ranges:
+            if self.debug:
+              print "runR[0] ",runR[0],"  runR[1] ",runR[1] 
             shortJSON = jsonTools.shortenJson(datasetAndJSON,runR[0],runR[1])
+            if self.debug:
+              print "len(shortJSON) ",len(shortJSON)
             if len(shortJSON):             
               shortJSONfilename = myTools.addPostFixToFilename (JSONfilename,'_'+postfix+'_part_'+str(len(shortendJSONs)))
+              if self.debug:
+                print "shortJSONfilename ",shortJSONfilename
 	      setattr(shortJSON,'JSONfileName',shortJSONfilename);setattr(shortJSON,'label','_part_'+str(len(shortendJSONs)))
               shortendJSONs.append(shortJSON)
           crabPs = []    
+          if self.debug:
+            print "numberOfCrabs ",len(shortendJSONs)
           for shJ in shortendJSONs:
+            if self.debug:
+              print "writing ",shJ.JSONfileName
             shJ.writeJSON(shJ.JSONfileName) 
             cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts)+" runRange="+shJ.getRuns()[0]+"-"+shJ.getRuns()[-1],postfix+"_"+shJ.label ) 
             processSample =  myTools.processSample(cfgSamp)
@@ -184,6 +194,7 @@ class cmsswAnalysis(object):
             for kD in keysToDelete:
                 if CrabTools.crabCfg["CMSSW"].has_key(kD):
                         del(CrabTools.crabCfg["CMSSW"][kD])
+            crabP.createCrabCfg(sampDict.get("crabConfig"))
             crabPs.append(crabP)
  
 
@@ -191,10 +202,10 @@ class cmsswAnalysis(object):
         else:
           crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
           crabP.setCrabDir(sample.postfix,self.timeStamp,self.options["outputPath"])
+          crabP.createCrabCfg(sampDict.get("crabConfig"))
           crabPs.append(crabP)
         print "number of crabs ",len(crabPs)
         for crabP in crabPs:
-          crabP.createCrabCfg(sampDict.get("crabConfig"))
           crabCfgFilename = crabP.createCrabDir()
           crabP.writeCrabCfg()
           crabP.create()#executeCrabCommand("-create",debug = True) 
@@ -204,7 +215,7 @@ class cmsswAnalysis(object):
               crabP.submit()
               crabP.executeCrabCommand("-status")
           self.bookKeeping.addCrab(crabJsonFile)
-    processSample.end()
+    #processSample.end()
     dontExecParallel = self.dontExec
     if self.runParallel and len(commandList) > 0:
       print "running ",self.numProcesses," cmsRun in parallel"

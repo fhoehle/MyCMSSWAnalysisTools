@@ -165,7 +165,8 @@ class processSample(object):
     self.cfgOutputFolder = cfgOutputFolder if cfgOutputFolder != '' else self.workLoc
     if not path.exists(self.cfgOutputFolder): 
       os.makedirs(self.cfgOutputFolder)
-    self.samp =  samp
+    import copy
+    self.samp =  copy.deepcopy(samp)
     from os import path
     self.loadTmpCfg()
     #adapt input

@@ -67,7 +67,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.workdir = workdir
     self.timeSt = timeSt 
     self.addGridDir = addGridDir
-    print "self.addGridDir ",self.addGridDir," self.postfix ",self.postfix," self.timeSt ",self.timeSt 
+    #print "self.addGridDir ",self.addGridDir," self.postfix ",self.postfix," self.timeSt ",self.timeSt 
     self.user_remote_dir = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") + self.postfix+"_"+self.timeSt
     self.__type__="crabProcess"
     self.crabJobDir = None
@@ -99,11 +99,10 @@ class crabProcess(crabDeamonTools.crabDeamon):
   def setCrabDir(self,addCrabDir ="",timeSt = "",workdir = ""):
     if workdir == "":
       workdir =  self.workdir
-    print workdir
     import os
-    print "workdir ",workdir," addCrabDir ",addCrabDir," timeSt ",timeSt
     crabDir = os.path.realpath(workdir)+((os.path.sep+addCrabDir) if addCrabDir != "" else "")+(("_"+timeSt) if timeSt != "" else "")
-    print "crabDir ",crabDir
+    if self.debug:
+      print "crabDir ",crabDir
     self.crabDir = crabDir + os.path.sep if not crabDir.endswith('/') else "" 
     return crabDir
   def createCrabDir(self):
@@ -118,14 +117,15 @@ class crabProcess(crabDeamonTools.crabDeamon):
     tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
     tmpCrabCfg["CMSSW"].pop("output_file",None)
     tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp
-#    tmpCrabCfg["USER"]["ui_working_dir"]
     if changes != None:
       self.applyChanges(tmpCrabCfg,changes)  
     self.crabCfg =tmpCrabCfg
     return self.crabCfg
   def create(self):
     self.executeCrabCommand("-create",debug = True)
-    self.findCrabJobDir(self.crabDir) 
+    self.findCrabJobDir(self.crabDir)
+  def reportLumi(self):
+    self.executeCrabCommand("-report && lumiCalc2.py overview -i "+self.crabJobDir+"/res/lumiSummary.json >& "+self.crabJobDir+"/../"+os.path.basename(self.crabJobDir)+"_lumiSummary.txt",debug = True) 
   def changeCrabJobDir(self,newDir):
     self.crabJobDir = newDir
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
@@ -201,3 +201,45 @@ def updateSubmitServer(newServer,dbFile,debug=False):
   cur.execute("UPDATE bl_task SET server_name='"+newServer+"'")
   conn.commit()
   print "updated to ",newServer
+########
+def listCrabJobs(detailedInfo=False, timePoint = None):
+  import fnmatch
+  import os
+  matches = []
+  for root, dirnames, filenames in os.walk(os.getenv('PWD')):
+    for filename in fnmatch.filter(filenames, '*CrabCfg.json'):
+      matches.append(os.path.join(root, filename)) 
+  if detailedInfo:
+    print matches
+    print "-----------"
+  import datetime,time
+  if timePoint:
+    if not isinstance(timePoint,datetime.datetime):
+      timePoint =datetime.datetime.now()-datetime.timedelta(days=timePoint)
+  jobs= [m for m in matches if timePoint and int(loadCrabJob(m).timeSt.replace("_","").replace("-","")) > int(timePoint.strftime('%Y%m%d%H%M%S')) ]
+  if detailedInfo:
+    print jobs
+    print "jobs: ",len(jobs)
+  return jobs 
+def commandAllJobs(cmd,timePoint = None,debug=False):
+  matches = listCrabJobs(False,timePoint)
+  for m in matches:
+    cJ = loadCrabJob(m)
+    cJ.executeCrabCommand(cmd,debug=debug)
+def automaticResubmitAll(timePoint = None,debug=False):
+  matches = listCrabJobs(False,timePoint)
+  for m in matches:
+    cJ = loadCrabJob(m)
+    cJ.automaticResubmit(debug=debug)
+
+def overview(detailedInfo=False, timePoint = None):
+  matches = listCrabJobs(detailedInfo,timePoint)
+  for m in matches:
+    cJ = loadCrabJob(m)
+    status_cJ = cJ.getStatusList()
+    noJobs = len(status_cJ) 
+    noGoodJob = cJ.jobRetrievedGood()
+    if detailedInfo:
+      print "".join(cJ.getStatusList()  )
+    print m
+    print "good ",len(noGoodJob), " of ",noJobs
