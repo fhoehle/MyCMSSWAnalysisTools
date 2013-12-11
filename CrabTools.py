@@ -125,7 +125,15 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.executeCrabCommand("-create",debug = True)
     self.findCrabJobDir(self.crabDir)
   def reportLumi(self):
-    self.executeCrabCommand("-report && lumiCalc2.py overview -i "+self.crabJobDir+"/res/lumiSummary.json >& "+self.crabJobDir+"/../"+os.path.basename(self.crabJobDir)+"_lumiSummary.txt",debug = True) 
+    import re
+    csvFile = self.crabJobDir+"/../"+os.path.basename(self.crabJobDir)+"_lumiSummary_csv.txt"
+    self.executeCrabCommand("-report && lumiCalc2.py overview -i "+self.crabJobDir+"/res/lumiSummary.json -o "+csvFile,debug = True) 
+    intLumi = 0
+    for l in open(csvFile):
+      match = re.match('^[0-9]+:.*,\ *([0-9]+\.[0-9])\ *.*$',l)
+      if match:
+        intLumi += float(match.group(1))
+    print "intLumi ",intLumi
   def changeCrabJobDir(self,newDir):
     self.crabJobDir = newDir
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
@@ -202,9 +210,9 @@ def updateSubmitServer(newServer,dbFile,debug=False):
   conn.commit()
   print "updated to ",newServer
 ########
-def listCrabJobs(detailedInfo=False, timePoint = None):
+def listCrabJobs(detailedInfo=False, timePoint = None,sorted=False):
   import fnmatch
-  import os
+  import os,re
   matches = []
   for root, dirnames, filenames in os.walk(os.getenv('PWD')):
     for filename in fnmatch.filter(filenames, '*CrabCfg.json'):
@@ -217,21 +225,22 @@ def listCrabJobs(detailedInfo=False, timePoint = None):
     if not isinstance(timePoint,datetime.datetime):
       timePoint =datetime.datetime.now()-datetime.timedelta(days=timePoint)
   jobs= [m for m in matches if timePoint and int(loadCrabJob(m).timeSt.replace("_","").replace("-","")) > int(timePoint.strftime('%Y%m%d%H%M%S')) ]
+  if sorted:
+    jobs.sort(key=lambda c : re.match('.*([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}).*',os.path.basename(c)).group(1) )
   if detailedInfo:
     print jobs
     print "jobs: ",len(jobs)
   return jobs 
-def commandAllJobs(cmd,timePoint = None,debug=False):
-  matches = listCrabJobs(False,timePoint)
+def commandAllJobs(cmd,timePoint = None,debug=False,listJ=None):
+  matches = listJ if listJ else listCrabJobs(False,timePoint)
   for m in matches:
     cJ = loadCrabJob(m)
     cJ.executeCrabCommand(cmd,debug=debug)
-def automaticResubmitAll(timePoint = None,debug=False):
-  matches = listCrabJobs(False,timePoint)
+def automaticResubmitAll(timePoint = None,debug=False,listJ=None):
+  matches = listJ if listJ else listCrabJobs(False,timePoint)
   for m in matches:
     cJ = loadCrabJob(m)
     cJ.automaticResubmit(debug=debug)
-
 def overview(detailedInfo=False, timePoint = None):
   matches = listCrabJobs(detailedInfo,timePoint)
   for m in matches:
