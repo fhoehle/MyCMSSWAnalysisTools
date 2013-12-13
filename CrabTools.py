@@ -1,6 +1,6 @@
 ### default dict
 import sys,os
-sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'MyCrabTools')
+sys.path.extend([ os.getenv('CMSSW_BASE')+os.path.sep+p for p in ['MyCrabTools','MyCMSSWAnalysisTools']])
 import crabDeamonTools
 crabCfg = {
   "CRAB" :{
@@ -101,8 +101,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
       workdir =  self.workdir
     import os
     crabDir = os.path.realpath(workdir)+((os.path.sep+addCrabDir) if addCrabDir != "" else "")+(("_"+timeSt) if timeSt != "" else "")
-    if self.debug:
-      print "crabDir ",crabDir
+    #if self.debug:
+    print "crabDir ",crabDir
     self.crabDir = crabDir + os.path.sep if not crabDir.endswith('/') else "" 
     return crabDir
   def createCrabDir(self):
@@ -126,14 +126,10 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.findCrabJobDir(self.crabDir)
   def reportLumi(self):
     import re
-    csvFile = self.crabJobDir+"/../"+os.path.basename(self.crabJobDir)+"_lumiSummary_csv.txt"
-    self.executeCrabCommand("-report && lumiCalc2.py overview -i "+self.crabJobDir+"/res/lumiSummary.json -o "+csvFile,debug = True) 
-    intLumi = 0
-    for l in open(csvFile):
-      match = re.match('^[0-9]+:.*,\ *([0-9]+\.[0-9])\ *.*$',l)
-      if match:
-        intLumi += float(match.group(1))
-    print "intLumi ",intLumi
+    import Tools.lumiTools as lumiTools
+    self.executeCrabCommand("-report",debug = True) 
+    lumiTools.calcLumi(self.crabJobDir+"/res/lumiSummary.json")
+
   def changeCrabJobDir(self,newDir):
     self.crabJobDir = newDir
   def executeCrabCommand(self,command,debug = False,returnOutput = False):

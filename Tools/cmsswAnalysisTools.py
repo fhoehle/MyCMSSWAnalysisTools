@@ -5,6 +5,7 @@ import sys,imp,subprocess,os,getopt,re,argparse
 sys.path.extend([os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/Tools',os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools'])
 import MyDASTools.dasTools as dasTools
 import tools as myTools
+import coreTools
 import jsonTools 
 import runRangesManagment
 ####
@@ -57,7 +58,7 @@ class cmsswAnalysis(object):
     self.specificSamples = self.specificSamples if self.specificSamples != None else self.specificSamples
     options ={}
     options["maxEvents"]=1000
-    self.timeStamp = myTools.getTimeStamp()
+    self.timeStamp = coreTools.getTimeStamp()
     
     options["outputPath"]=os.getenv("PWD")+os.path.sep+'TMP_'+self.timeStamp+os.path.sep
 
@@ -142,6 +143,7 @@ class cmsswAnalysis(object):
           print "constTriggerRanges ",triggerRunRanges.ranges
           print "processing sample ",sample.datasetName
           myDASClient = dasTools.myDasClient(self.debug)
+          myDASClient.limit=0
  	  DatasetLumilist = myDASClient.getJsonOfDataset(sample.datasetName)
 	  onlyRunsDataset = [ int(r) for r in DatasetLumilist.getRuns()]
           print "onlyRuns ",onlyRunsDataset
@@ -195,6 +197,9 @@ class cmsswAnalysis(object):
                 if CrabTools.crabCfg["CMSSW"].has_key(kD):
                         del(CrabTools.crabCfg["CMSSW"][kD])
             crabP.createCrabCfg(sampDict.get("crabConfig"))
+            print "lumi_mask",crabP.crabCfg["CMSSW"]["lumi_mask"]
+            crabP.createCrabDir()
+            crabP.writeCrabCfg()
             crabPs.append(crabP)
  
 
@@ -203,11 +208,11 @@ class cmsswAnalysis(object):
           crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
           crabP.setCrabDir(sample.postfix,self.timeStamp,self.options["outputPath"])
           crabP.createCrabCfg(sampDict.get("crabConfig"))
+          crabP.createCrabDir()
+          crabP.writeCrabCfg()
           crabPs.append(crabP)
         print "number of crabs ",len(crabPs)
         for crabP in crabPs:
-          crabCfgFilename = crabP.createCrabDir()
-          crabP.writeCrabCfg()
           crabP.create()#executeCrabCommand("-create",debug = True) 
           crabJsonFile = self.options["outputPath"]+"/"+crabP.postfix+"_"+self.timeStamp+"_CrabCfg.json"
           CrabTools.saveCrabProp(crabP,crabJsonFile)

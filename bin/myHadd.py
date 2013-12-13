@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 import sys,copy,subprocess,os,argparse
+sys.path.append(os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools')
+from Tools.coreTools import executeCommandSameEnv,checkCommandAbortIfFail
 ###############
-def executeCommandSameEnv(command):
-  import os,subprocess
-  return subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
 def removeCrabJobPostfix(name,postfix = ""):
   import re
   reName = re.match('.*\/([^\/]+)_[0-9]+_[0-9]+_[a-zA-Z0-9]{3}(\.[0-9a-zA-Z]+)',name)
@@ -37,18 +36,12 @@ def mergedHadd(target,inputFiles,chunkSize=10,debug = False):
     if debug:
      print haddArgs
     sP = executeCommandSameEnv("hadd "+haddArgs)
-    sP.wait()
-    if sP.returncode != 0:
-      print sP.communicate()[0]
-      sys.exit(sP.returncode)
+    checkCommandAbortIfFail(sP)
     sys.stdout.flush() 
   ## tidy up
   if mergeSteps > 1:
     sP = executeCommandSameEnv("rm "+targetTmpPattern+"*")
-    sP.wait()
-    if debug:
-      print sP.communicate()[0]
-    return sP.returncode
+    checkCommandAbortIfFail(sP)
   return 0
 ################
 def main():

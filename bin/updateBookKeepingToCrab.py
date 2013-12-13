@@ -6,6 +6,7 @@ import myHadd
 import processedEvents
 import printGridUrlfromCrabReport
 import tools
+import coreTools
 parser = argparse.ArgumentParser()
 parser.add_argument('--bookKeeping',help='bookKeeping file which should be updated to craboutput',required=True)
 parser.add_argument('--debug',action="store_true",default=False,help='debug mode')
@@ -41,7 +42,7 @@ if len(analysisFiles.values()) > 0:
     myHadd.mergedHadd(target,analysisFiles.values(), debug = args.debug)
     print "done" 
   dataset["outputFilesCrab"]=[target]
-bookKeepingFileName = tools.addPostFixToFilename(args.bookKeeping,'_bookKeepingUpdated_'+tools.getTimeStamp())
+bookKeepingFileName = tools.addPostFixToFilename(args.bookKeeping,'_bookKeepingUpdated_'+coreTools.getTimeStamp())
 updatedbookKeeping = open(bookKeepingFileName ,'wb')
 json.dump(data,updatedbookKeeping);updatedbookKeeping.close()
 print "new bookKeeping created ",bookKeepingFileName

@@ -2,7 +2,8 @@
 import FWCore.ParameterSet.Config as cms
 import sys,imp,subprocess,re,os,ROOT
 ROOT.TH1.AddDirectory(False)
-sys.path.append(os.getenv('HOME')+'/PyRoot_Helpers/PyRoot_Functions')
+sys.path.extend([os.getenv('HOME')+'/PyRoot_Helpers/PyRoot_Functions',os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/Tools'])
+import coreTools
 import MyHistFunctions_cfi as MyHistFunctions
 def addPostFixToFilename(name,postfix):
   from os import path
@@ -105,9 +106,6 @@ def getDatasetName(sample):
   print "found ",datasets
   return datasets[0] if len(datasets)> 0 else None
 ########################
-def executeCommandSameEnv(command):
- import os,subprocess
- return subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
 class processSample(object):
   def __init__(self,cfgFileName,debug=False):
     self.cfgFileName = cfgFileName
@@ -340,9 +338,6 @@ def _pretty_lines(self, keys):
 class NullService():
    def write(self,s):
      pass
-def getTimeStamp():
-  import datetime,time
-  return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
 def updateColorsBookKept(bookKept,inputDicts):
   if not hasattr(bookKept,"data"):
     print "wrong bookKept"
@@ -358,3 +353,6 @@ def updateColorsBookKept(bookKept,inputDicts):
       else:
         bookKept.data[key]["sample"]["color"] =  inputDicts[key]["color"]
         return True
+def datasetToName(dsName):
+  return dsName.strip().strip('/').replace('/','__')
+

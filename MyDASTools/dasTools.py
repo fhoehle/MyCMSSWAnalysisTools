@@ -2,7 +2,11 @@ import os,sys
 sys.path.append(os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/MyDASTools/DASclient/python')
 import das_client
 ##
-class myDasClient:
+def myDasClient(debug=False): 
+  dC = theDasClient(debug)
+  dC.limit=0
+  return dC
+class theDasClient:
   def __init__(self,debug=False):
     self.optmgr = das_client.DASOptionParser()
     self.opts, _ = self.optmgr.get_opt()
