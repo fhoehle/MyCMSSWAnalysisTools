@@ -22,7 +22,11 @@ class theDasClient:
     self.base = self.opts.base
     self.debug=debug
   def getDataSetNameForFile(self,filename):
+    if self.debug:
+      print "searching dataset for file ",filename
     jsondict = self.myQuery("dataset file = "+filename)
+    if self.debug:
+      print jsondict
     return [ str(ele.get('dataset')[0].get('name')) for ele in jsondict.get('data')]
   def getRunsFromDatasetname(self,datasetName):
     runsDAS = self.myQuery("run dataset = "+datasetName)

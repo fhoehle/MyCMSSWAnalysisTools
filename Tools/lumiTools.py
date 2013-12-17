@@ -1,6 +1,7 @@
 import sys,os,re
 sys.path.append(os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools')
 import Tools.coreTools as coreTools
+from FWCore.PythonUtilities.LumiList   import LumiList
 def calcLumi(jsonFile):
     csvFile=jsonFile.strip()+"_lumiCSV.csv"
     lC = coreTools.executeCommandSameEnv("lumiCalc2.py overview -i "+jsonFile+" -o "+csvFile)

@@ -107,9 +107,8 @@ class cmsswAnalysis(object):
         for k,dct in dataTriggers.iteritems():
           print "ch ",k," ",dataTriggers[k]['data']
       print "remainingOpts ",remainingOpts
-
+      runRange=""
       if not self.runGrid:
-        runRange=""
         if self.args.runOnData:  # set runRange 
           import lumiListFromFile
           fileRuns = lumiListFromFile.getLumiListFromFile('dcap://grid-dcap.physik.rwth-aachen.de/pnfs/physik.rwth-aachen.de/cms'+sampDict["localFile"] if sampDict["localFile"].startswith('/store/') else sampDict["localFile"][5:]).getRuns()
@@ -125,6 +124,7 @@ class cmsswAnalysis(object):
           commandList.append(processSample.runSample(not self.runParallel))
         self.bookKeeping.bookKeep(processSample)
       else:
+        crabPs = []    
         sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
         sample.loadDict(sampDict)
         sample.__dict__["color"]=sampDict["color"]
@@ -168,7 +168,6 @@ class cmsswAnalysis(object):
                 print "shortJSONfilename ",shortJSONfilename
 	      setattr(shortJSON,'JSONfileName',shortJSONfilename);setattr(shortJSON,'label','_part_'+str(len(shortendJSONs)))
               shortendJSONs.append(shortJSON)
-          crabPs = []    
           if self.debug:
             print "numberOfCrabs ",len(shortendJSONs)
           for shJ in shortendJSONs:
@@ -205,6 +204,15 @@ class cmsswAnalysis(object):
 
            #print "this many lumis ",len(shJ.getLumis())
         else:
+          cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts) + runRange,postfix )
+          processSample =  myTools.processSample(cfgSamp)
+          processSample.applyChanges(sample)
+          print "processing ",postfix," ",sampDict["localFile"]
+          sys.stdout.flush()
+          processSample.setOutputFilesGrid()
+          processSample.createNewCfg()
+          self.bookKeeping.bookKeep(processSample)
+          sys.stdout.flush()
           crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
           crabP.setCrabDir(sample.postfix,self.timeStamp,self.options["outputPath"])
           crabP.createCrabCfg(sampDict.get("crabConfig"))

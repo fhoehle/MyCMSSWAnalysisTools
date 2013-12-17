@@ -239,6 +239,7 @@ def automaticResubmitAll(timePoint = None,debug=False,listJ=None):
     cJ.automaticResubmit(debug=debug)
 def overview(detailedInfo=False, timePoint = None):
   matches = listCrabJobs(detailedInfo,timePoint)
+  notFinished=[]; finished=[]
   for m in matches:
     cJ = loadCrabJob(m)
     status_cJ = cJ.getStatusList()
@@ -248,3 +249,8 @@ def overview(detailedInfo=False, timePoint = None):
       print "".join(cJ.getStatusList()  )
     print m
     print "good ",len(noGoodJob), " of ",noJobs
+    if len(noGoodJob) == noJobs:
+      finished.append(m)
+    else:
+      notFinished.append(m)
+  return {'notFinished':notFinished,"finished":finished}
