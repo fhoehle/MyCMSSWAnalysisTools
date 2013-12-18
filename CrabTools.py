@@ -128,8 +128,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     import re
     import Tools.lumiTools as lumiTools
     self.executeCrabCommand("-report",debug = True) 
-    lumiTools.calcLumi(self.crabJobDir+"/res/lumiSummary.json")
-
+    intL=lumiTools.calcLumi(self.crabJobDir+"/res/lumiSummary.json")
+    return intL 
   def changeCrabJobDir(self,newDir):
     self.crabJobDir = newDir
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
