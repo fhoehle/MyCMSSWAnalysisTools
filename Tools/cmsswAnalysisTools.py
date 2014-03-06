@@ -31,6 +31,15 @@ class cmsswAnalysis(object):
     print args.usage
     if args.usage:
       parser.print_help()
+      print "========================"
+      print "additional Options for specific cfg:"
+      print "========================"
+      helpCfgCmd = "python "+self.cfg+" --help"
+      if self.debug:
+        print helpCfgCmd
+      helpCfgPr = myTools.coreTools.executeCommandSameEnv(helpCfgCmd)
+      helpCfgPr.wait()
+      print helpCfgPr.communicate()[0]
       sys.exit(0)
     if args.showAvailableSamples:
       print 'available samples: ',self.samples.keys()
