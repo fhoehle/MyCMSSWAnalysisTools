@@ -250,13 +250,17 @@ class processSample(object):
       except OSError:
         pass
 ##############
-def getFileMetaInformation(inputFiles):
+def getFileMetaInformation(inputFiles,debug=False):
  import subprocess,os,json
- return  json.loads(subprocess.Popen(["edmFileUtil -j "+" ".join(inputFiles)],shell=True,stdout=subprocess.PIPE,env=os.environ).communicate()[0])
+ edmFileUtil_out = subprocess.Popen(["edmFileUtil -j "+" ".join(inputFiles)],shell=True,stdout=subprocess.PIPE,env=os.environ).communicate()[0]
+ if debug:
+   print "edmFileUtil_out ",edmFileUtil_out
+ return  json.loads(edmFileUtil_out)
 ## bookKeeping
 class bookKeeping():
-  def __init__(self):
+  def __init__(self,debug=False):
     self.data = {}
+    self.debug=debug
   def bookKeep(self,processSample):
     if not hasattr(processSample,"tmpCfgFileLoaded") or  not hasattr(processSample,"samp"):
       print "no bookKeeping, ",processSample
@@ -264,7 +268,7 @@ class bookKeeping():
     self.postfix = processSample.samp.postfix
     inputFilesInfo = []
     if len(processSample.tmpCfgFileLoaded.process.source.fileNames.value()):
-      inputFilesInfo = getFileMetaInformation(processSample.tmpCfgFileLoaded.process.source.fileNames.value())
+      inputFilesInfo = getFileMetaInformation(processSample.tmpCfgFileLoaded.process.source.fileNames.value(),self.debug)
     maxInputEvts = sum([f["events"] for f in inputFilesInfo])
     self.data[self.postfix] = {"totalEvents":maxInputEvts}
     maxEvtsProcess = processSample.tmpCfgFileLoaded.process.maxEvents.input.value()

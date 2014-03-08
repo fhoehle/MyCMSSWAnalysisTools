@@ -97,7 +97,7 @@ class cmsswAnalysis(object):
       self.stdoutBck= sys.stdout
       sys.stdout = self.newstdoutFile
     ### json output
-    self.bookKeeping = myTools.bookKeeping()
+    self.bookKeeping = myTools.bookKeeping(debug=self.debug)
     ####
     commandList = []
     dontExecCrab = self.dontExec
