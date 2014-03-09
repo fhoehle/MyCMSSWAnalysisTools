@@ -13,6 +13,7 @@ class cmsswAnalysis(object):
   def __init__(self,samples,cfg):
      self.cfg=cfg
      self.samples=samples
+     self.timeStamp = coreTools.getTimeStamp()
   def readOpts(self):
     #opts, args = getopt.getopt(sys.argv[1:], '',['addOptions=','help','runGrid','runParallel=','specificSamples=','dontExec'])
     parser = argparse.ArgumentParser()
@@ -25,6 +26,7 @@ class cmsswAnalysis(object):
     parser.add_argument('--usage',action='store_true',default=False,help='help message')
     parser.add_argument('--showAvailableSamples',action='store_true',default=False,help='show samples which can be processed')
     parser.add_argument('--runOnData',action='store_true',default=False,help=' activate running on data, will be transmitted to addOptions of cfg')
+    parser.add_argument('--outputDirectory',default=os.getenv("PWD")+os.path.sep+'TMP_',help='dircetory where output is stored with additional timeStamp')
     args = parser.parse_known_args()
     args,notKnownArgs = args
     self.debug = args.debug
@@ -61,27 +63,23 @@ class cmsswAnalysis(object):
     print "addIOpts after ",self.addOptions
     for opt in args.__dict__.keys():
        myTools.removeOptFromArgv(opt)
-#      if opt in ("--help"):
-#        print 'python runAnalysis.py --specificSamples label1,label2 --runParallel 2 --runGrid --addOptions \"maxEvents=1 outputPath=/net/scratch_cms/institut_3b/hoehle/hoehle/tmp\"'
-#        sys.exit(0)
     self.specificSamples = self.specificSamples if self.specificSamples != None else self.specificSamples
     options ={}
     options["maxEvents"]=1000
-    self.timeStamp = coreTools.getTimeStamp()
-    
-    options["outputPath"]=os.getenv("PWD")+os.path.sep+'TMP_'+self.timeStamp+os.path.sep
+    self.outputDirectory = args.outputDirectory+self.timeStamp+os.path.sep
+    options["outputPath"]=self.outputDirectory
 
     for opt in self.addOptions.split():
       #print "opt ",opt
       reOpt = re.match('([^=]*)=([^=]*)',opt)
       if reOpt:#options.has_key(reOpt.group(1)):
         options[reOpt.group(1)]=reOpt.group(2)
-      if not options["outputPath"].endswith(self.timeStamp+os.path.sep):
-        options["outputPath"]= os.path.realpath(options["outputPath"])+"_"+self.timeStamp+os.path.sep 
-      print options["outputPath"]
+      #if not options["outputPath"].endswith(self.timeStamp+os.path.sep):
+      #  options["outputPath"]= os.path.realpath(options["outputPath"])+"_"+self.timeStamp+os.path.sep 
+      #print options["outputPath"]
     print "all options ",options
     if not self.debug:
-      self.newstdoutFile = options["outputPath"]+'log_'+self.timeStamp+'.txt'
+      self.newstdoutFile = self.outputDirectory+'log_'+self.timeStamp+'.txt'
       print "capturing stdout in ",self.newstdoutFile
     self.options =options
     self.args = args
@@ -91,7 +89,7 @@ class cmsswAnalysis(object):
 #make tmp copy  
   def startAnalysis(self):
     tmpCfg = self.cfg
-    tmpCfg = myTools.createWorkDirCpCfg(self.options["outputPath"],tmpCfg,self.timeStamp)
+    tmpCfg = myTools.createWorkDirCpCfg(self.outputDirectory,tmpCfg,self.timeStamp)
     if not self.debug:
       self.newstdoutFile = open(self.newstdoutFile, 'w')
       self.stdoutBck= sys.stdout
@@ -101,7 +99,7 @@ class cmsswAnalysis(object):
     ####
     commandList = []
     dontExecCrab = self.dontExec
-    print "sarting analysis"
+    print "starting analysis"
     for postfix,sampDict in self.samples.iteritems()if self.specificSamples == None else [(p,s) for p,s in self.samples.iteritems() if p in self.specificSamples ]:
       print "processing ",postfix," ",sampDict["localFile"]
       print "options before ",self.options.keys()," self.addOptions ",self.addOptions," samp ",(sampDict["addOptions"]) if sampDict.has_key("addOptions") else ""
@@ -198,8 +196,8 @@ class cmsswAnalysis(object):
             if not sampDict["crabConfig"]["CMSSW"].has_key("lumis_per_job"):
               print "lumis_per_job given therefore used default ",default_lumis_per_job
               sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=default_lumis_per_job
-            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
-            crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,self.options["outputPath"])
+            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,self.outputDirectory,self.timeStamp,addGridDir="test")
+            crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,self.outputDirectory)
 	    keysToDelete = ['total_number_of_events',"number_of_jobs"]
             for kD in keysToDelete:
                 if CrabTools.crabCfg["CMSSW"].has_key(kD):
@@ -222,8 +220,8 @@ class cmsswAnalysis(object):
           processSample.createNewCfg()
           self.bookKeeping.bookKeep(processSample)
           sys.stdout.flush()
-          crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,self.options["outputPath"],self.timeStamp,addGridDir="test")
-          crabP.setCrabDir(sample.postfix,self.timeStamp,self.options["outputPath"])
+          crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,elf.outputDirectory,self.timeStamp,addGridDir="test")
+          crabP.setCrabDir(sample.postfix,self.timeStamp,self.outputDirectory)
           crabP.createCrabCfg(sampDict.get("crabConfig"))
           crabP.createCrabDir()
           crabP.writeCrabCfg()
@@ -231,7 +229,7 @@ class cmsswAnalysis(object):
         print "number of crabs ",len(crabPs)
         for crabP in crabPs:
           crabP.create()#executeCrabCommand("-create",debug = True) 
-          crabJsonFile = self.options["outputPath"]+"/"+crabP.postfix+"_"+self.timeStamp+"_CrabCfg.json"
+          crabJsonFile = self.outputDirectory+"/"+crabP.postfix+"_"+self.timeStamp+"_CrabCfg.json"
           CrabTools.saveCrabProp(crabP,crabJsonFile)
           if not dontExecCrab:
               crabP.submit()
@@ -247,6 +245,6 @@ class cmsswAnalysis(object):
         doWhatEverParallel.execute(commandList,self.numProcesses)
 
   ##
-    self.bookKeeping.save(self.options["outputPath"]+'/',self.timeStamp)
+    self.bookKeeping.save(self.outputDirectory+'/',self.timeStamp)
     if not self.debug:
       sys.stdout=self.stdoutBck
