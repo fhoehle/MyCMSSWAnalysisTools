@@ -23,6 +23,7 @@ class cmsswAnalysis(object):
     parser.add_argument('--runParallel',default=False,help="call multiple instances for cfgs each process runs on one cfg")
     parser.add_argument('--specificSamples',type=str,default=None,help="only process given samples given by labels")
     parser.add_argument('--debug',action='store_true',default=False,help=' activate debug modus ')
+    parser.add_argument('--debugAnalysis',action='store_true',default=False,help=' activates analysis debug modus ')
     parser.add_argument('--usage',action='store_true',default=False,help='help message')
     parser.add_argument('--showAvailableSamples',action='store_true',default=False,help='show samples which can be processed')
     parser.add_argument('--runOnData',action='store_true',default=False,help=' activate running on data, will be transmitted to addOptions of cfg')
@@ -59,7 +60,7 @@ class cmsswAnalysis(object):
     self.dontExec = args.dontExec
     self.addOptions=""
     print "addIOpts before ",self.addOptions
-    self.addOptions=args.addOptions+( (' runOnData=True' if not 'runOnData=True' in args.addOptions and not 'runOnData=True' in self.addOptions else "") if args.runOnData else '')
+    self.addOptions=args.addOptions+( (' runOnData=True' if not 'runOnData=True' in args.addOptions and not 'runOnData=True' in self.addOptions else "") if args.runOnData else '')+(' debug=True' if args.debugAnalysis else "")
     print "addIOpts after ",self.addOptions
     for opt in args.__dict__.keys():
        myTools.removeOptFromArgv(opt)
