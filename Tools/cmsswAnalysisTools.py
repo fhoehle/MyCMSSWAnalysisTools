@@ -28,8 +28,10 @@ class cmsswAnalysis(object):
     parser.add_argument('--showAvailableSamples',action='store_true',default=False,help='show samples which can be processed')
     parser.add_argument('--runOnData',action='store_true',default=False,help=' activate running on data, will be transmitted to addOptions of cfg')
     parser.add_argument('--outputDirectory',default=os.getenv("PWD")+os.path.sep+'TMP_',help='dircetory where output is stored with additional timeStamp')
+    parser.add_argument('--useXRootDAccess',action='store_true',default=False,help=' if dcap door down use xrootd alternative access')
     args = parser.parse_known_args()
     args,notKnownArgs = args
+    self.useXRootDAccess = args.useXRootDAccess
     self.debug = args.debug
     print args.usage
     if args.usage:
@@ -126,6 +128,8 @@ class cmsswAnalysis(object):
         sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
         sample.loadDict(sampDict)
         sample.__dict__["color"]=sampDict["color"]
+        if self.useXRootDAccess:
+          sample.useXRootDLocation()
         processSample.applyChanges(sample)
         sys.stdout.flush()
         if not ( self.dontExec and not self.runParallel):
@@ -136,6 +140,8 @@ class cmsswAnalysis(object):
         sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
         sample.loadDict(sampDict)
         sample.__dict__["color"]=sampDict["color"]
+        if self.useXRootDAccess:
+          sample.useXRootDLocation()
         import CrabTools
         sample.setDataset()
         if self.args.runOnData:

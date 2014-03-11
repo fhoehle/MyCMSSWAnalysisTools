@@ -75,11 +75,21 @@ class sample(object):
     for k in self.__dict__.keys():
      if dictionary.has_key(k):
        self.__dict__[k]=dictionary[k]
+  def useXRootDLocation(self):
+    self.useXRootDAccess=True
   def getInputfiles(self):
     print "filenames, ",self.filenames,","
     inputFiles = None
     if self.filenames != [None] or self.filenames != [] or self.filenames:
       inputFiles = cms.untracked.vstring([f for f in self.filenames if f and (f.startswith('file:/') or  f.startswith('/store/')) ])
+    if self.useXRootDAccess:
+      import alternativeLocation
+      xRootDPathMaker = alternativeLocation.xRootDPathCreator()
+      xRootDInputfiles=[]
+      for inputF in inputFiles:
+        if not inputF.startswith('file:/') and f.startswith('/store/'):
+          xRootDInputfiles.append(str(xRootDPathMaker.getXrootDPath(inputF)))
+      inputFiles = cms.untracked.vstring(xRootDInputfiles)
     if len(self.filenames) == len(inputFiles):
       return inputFiles
     elif not self.datasetName:
