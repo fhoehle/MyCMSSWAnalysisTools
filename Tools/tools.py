@@ -66,6 +66,8 @@ class sample(object):
     self.xSec = float(xSec) if xSec else None
     self.maxEvents = maxEvents
     self.datasetName = datasetName
+    self.useXRootDAccess=False
+    self.debug=False
     if not isinstance(filenames,list):
      self.filenames = [filenames]
      print "correcting",filenames
@@ -84,7 +86,7 @@ class sample(object):
       inputFiles = cms.untracked.vstring([f for f in self.filenames if f and (f.startswith('file:/') or  f.startswith('/store/')) ])
     if self.useXRootDAccess:
       import alternativeLocation
-      xRootDPathMaker = alternativeLocation.xRootDPathCreator()
+      xRootDPathMaker = alternativeLocation.xRootDPathCreator(debug=self.debug)
       xRootDInputfiles=[]
       for inputF in inputFiles:
         if not inputF.startswith('file:/') and f.startswith('/store/'):
