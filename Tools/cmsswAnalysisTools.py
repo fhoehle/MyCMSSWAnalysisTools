@@ -73,13 +73,9 @@ class cmsswAnalysis(object):
     options["outputPath"]=self.outputDirectory
 
     for opt in self.addOptions.split():
-      #print "opt ",opt
       reOpt = re.match('([^=]*)=([^=]*)',opt)
-      if reOpt:#options.has_key(reOpt.group(1)):
+      if reOpt:
         options[reOpt.group(1)]=reOpt.group(2)
-      #if not options["outputPath"].endswith(self.timeStamp+os.path.sep):
-      #  options["outputPath"]= os.path.realpath(options["outputPath"])+"_"+self.timeStamp+os.path.sep 
-      #print options["outputPath"]
     print "all options ",options
     if not self.debug:
       self.newstdoutFile = self.outputDirectory+'log_'+self.timeStamp+'.txt'
@@ -91,8 +87,7 @@ class cmsswAnalysis(object):
 ## preparing cfg with additional options
 #make tmp copy  
   def startAnalysis(self):
-    tmpCfg = self.cfg
-    tmpCfg = myTools.createWorkDirCpCfg(self.outputDirectory,tmpCfg,self.timeStamp)
+    os.makedirs(os.path.dirname(self.outputDirectory))
     if not self.debug:
       self.newstdoutFile = open(self.newstdoutFile, 'w')
       self.stdoutBck= sys.stdout
@@ -104,12 +99,17 @@ class cmsswAnalysis(object):
     dontExecCrab = self.dontExec
     print "starting analysis"
     for postfix,sampDict in self.samples.iteritems()if self.specificSamples == None else [(p,s) for p,s in self.samples.iteritems() if p in self.specificSamples ]:
-      print "processing ",postfix," ",sampDict["localFile"]
-      print "options before ",self.options.keys()," self.addOptions ",self.addOptions," samp ",(sampDict["addOptions"]) if sampDict.has_key("addOptions") else ""
+      if self.debug:
+        print "processing ",postfix," ",sampDict["localFile"]
+        print "options before ",self.options.keys()," self.addOptions ",self.addOptions," samp ",(sampDict["addOptions"]) if sampDict.has_key("addOptions") else ""
       remainingOpts = myTools.removeAddOptions(['outputPath'],self.addOptions+(" "+sampDict["addOptions"] if sampDict.has_key("addOptions") else ""))
-      #remainingOpts = self.addOptions+(" "+sampDict["addOptions"] if sampDict.has_key("addOptions") else "")
-      print "remainingOptsTest ",remainingOpts
-      print "notKnown ",self.notKnownArgs
+      if self.debug:
+        print "remainingOptsTest ",remainingOpts
+        print "notKnown ",self.notKnownArgs
+      tmpCfg = self.cfg
+      outputLocation=self.outputDirectory+sampDict["label"]+(os.path.sep if not sampDict["label"].endswith('/') else "")
+      tmpCfg = myTools.createWorkDirCpCfg(outputLocation,tmpCfg,self.timeStamp)
+      ##############
       analysisTriggers = myTools.processSample(tmpCfg).getTriggersUsedForAnalysis()
       if self.args.runOnData:
         dataTriggers = analysisTriggers
@@ -203,8 +203,8 @@ class cmsswAnalysis(object):
             if not sampDict["crabConfig"]["CMSSW"].has_key("lumis_per_job"):
               print "lumis_per_job given therefore used default ",default_lumis_per_job
               sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=default_lumis_per_job
-            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,self.outputDirectory,self.timeStamp,addGridDir="test")
-            crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,self.outputDirectory)
+            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir="test")
+            crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,outputLocation)
 	    keysToDelete = ['total_number_of_events',"number_of_jobs"]
             for kD in keysToDelete:
                 if CrabTools.crabCfg["CMSSW"].has_key(kD):
@@ -227,8 +227,8 @@ class cmsswAnalysis(object):
           processSample.createNewCfg()
           self.bookKeeping.bookKeep(processSample)
           sys.stdout.flush()
-          crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,elf.outputDirectory,self.timeStamp,addGridDir="test")
-          crabP.setCrabDir(sample.postfix,self.timeStamp,self.outputDirectory)
+          crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir="test")
+          crabP.setCrabDir(sample.postfix,self.timeStamp,outputLocation)
           crabP.createCrabCfg(sampDict.get("crabConfig"))
           crabP.createCrabDir()
           crabP.writeCrabCfg()
@@ -236,7 +236,7 @@ class cmsswAnalysis(object):
         print "number of crabs ",len(crabPs)
         for crabP in crabPs:
           crabP.create()#executeCrabCommand("-create",debug = True) 
-          crabJsonFile = self.outputDirectory+"/"+crabP.postfix+"_"+self.timeStamp+"_CrabCfg.json"
+          crabJsonFile = outputLocation+"/"+crabP.postfix+"_"+self.timeStamp+"_CrabCfg.json"
           CrabTools.saveCrabProp(crabP,crabJsonFile)
           if not dontExecCrab:
               crabP.submit()
