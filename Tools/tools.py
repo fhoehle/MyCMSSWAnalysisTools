@@ -98,25 +98,21 @@ class sample(object):
       sys.exit('inputFiles not okay')
     else:
       return None
-  def setDataset(self):
-    if self.datasetName:
-      print "already datasetName given"
-    else:
-      self.datasetName = getDatasetName(self)
+  def setDataset(self,datasetName,debug=False):
+    self.datasetName = getDatasetNameFromString(datasetName,debug=debug)
 ####################
-def getDatasetName(sample,debug=False):
-  if not hasattr(sample,'filenames') or sample.filenames == None or len(sample.filenames) == 0:
-    print 'sample.filenames not given for sample ',sample.label
-    return None
-  import sys,os,re
-  sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'/MyCMSSWAnalysisTools/MyDASTools')
-  import dasTools
-  myDasClient = dasTools.myDasClient(debug=debug)
-  fileIdentifier = re.match('.*([0-9A-Z]{8}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{12}\.root)',sample.filenames[0]).group(1)
-  print "searching dataset for ",fileIdentifier
-  datasets = myDasClient.getDataSetNameForFile("*"+fileIdentifier)
-  print "found ",datasets
-  return datasets[0] if len(datasets)> 0 else None
+def getDatasetNameFromString(DatasetNameInString,debug=False):
+#  if not hasattr(sample,'filenames') or sample.filenames == None or len(sample.filenames) == 0:
+#    print 'sample.filenames not given for sample ',sample.label
+#    return None
+#  import sys,os,re
+#  sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'/MyCMSSWAnalysisTools/MyDASTools')
+#  import dasTools
+#  myDasClient = dasTools.myDasClient(debug=debug)
+  datasetName = '/'+re.sub('__','/',DatasetNameInString)
+  if debug:
+    print " datasetName ",datasetName
+  return datasetName
 ########################
 class processSample(object):
   def __init__(self,cfgFileName,debug=False):

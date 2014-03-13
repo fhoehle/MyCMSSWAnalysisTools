@@ -18,11 +18,11 @@ crabCfg = {
     "dbs_url":"http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet" #"https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_02_writer/servlet/DBSServlet"
     ,"datasetpath":"/test/USER"
     ,"pset":"test.py"
-    ,"number_of_jobs" : 500
+    #,"number_of_jobs" : 500
     ,"total_number_of_events" : -1
     #,"total_number_of_lumis" : -1
     #,"lumis_per_job" :  1000
-    #,"events_per_job":100
+    ,"events_per_job":10000
     ,"output_file" : "test.root"
     #,"lumi_mask": "test_Cert_136033-147120_7TeV_Nov4ReReco_Collisions10_JSON.txt"
     #,"generator":"lhe"
@@ -48,7 +48,7 @@ crabCfg = {
     #,"ce_white_list" : "T2_DE_RWTH"
     #,"se_white_list" : "dcache-se-cms.desy.de"
     #,"ce_black_list" : "T2_DE_RWTH"
-    ,"se_black_list" : "T2_TW_Taiwan"
+    #,"se_black_list" : "T2_TW_Taiwan"
     }
 }
 ###
@@ -134,11 +134,12 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.crabJobDir = newDir
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
     if not hasattr(self,'crabDir'):
-      self.createCrabDir()
-    if not hasattr(self,'crabJobDir') or not self.crabJobDir or self.crabJobDir == '': 
-      return  self.executeCommand(command,debug ,returnOutput,where=self.crabDir)
-    else:
-      return  self.executeCommand(command,debug ,returnOutput)
+      #self.createCrabDir()
+      sys.exit('crab dir is missing')
+    #if not hasattr(self,'crabJobDir') or not self.crabJobDir or self.crabJobDir == '': 
+    return  self.executeCommand(command,debug ,returnOutput,where=self.crabDir)
+    #else:
+    #  return  self.executeCommand(command,debug ,returnOutput)
   def submit(self,debug=False):
     output = self.executeCrabCommand("-status",False,True)
     import re

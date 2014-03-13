@@ -18,6 +18,7 @@ class cmsswAnalysis(object):
     #opts, args = getopt.getopt(sys.argv[1:], '',['addOptions=','help','runGrid','runParallel=','specificSamples=','dontExec'])
     parser = argparse.ArgumentParser()
     parser.add_argument('--runGrid',action='store_true',default=False,help=' if crab should be called, specific crab arguments can be provided in sample dictionary')
+    parser.add_argument('--maxGridEvents',default=-99,help=' max Events for GridJob')
     parser.add_argument('--dontExec',action='store_true',default=False,help=' don\'t call crab or run cfgs just create them and crab.cfg if is used')
     parser.add_argument('--addOptions',type=str,default='',help="options used for cfg compilation options like runOnTTbar=True or outputPath")
     parser.add_argument('--runParallel',default=False,help="call multiple instances for cfgs each process runs on one cfg")
@@ -143,7 +144,7 @@ class cmsswAnalysis(object):
         if self.useXRootDAccess:
           sample.useXRootDLocation()
         import CrabTools
-        sample.setDataset()
+        sample.setDataset(postfix,debug=True)
         if self.args.runOnData:
           dataTriggers = analysisTriggers
           runRanges = []
@@ -229,6 +230,8 @@ class cmsswAnalysis(object):
           sys.stdout.flush()
           crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir="test")
           crabP.setCrabDir(sample.postfix,self.timeStamp,outputLocation)
+          if self.args.maxGridEvents != -99:
+            sampDict["crabConfig"]["CMSSW"]["total_number_of_events"] = args.maxGridEvents
           crabP.createCrabCfg(sampDict.get("crabConfig"))
           crabP.createCrabDir()
           crabP.writeCrabCfg()
