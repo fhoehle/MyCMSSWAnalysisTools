@@ -33,6 +33,7 @@ crabCfg = {
     #,"storage_path" : "/srm/managerv2?SFN=/pnfs/physik.rwth-aachen.de/cms/store/user/fhohle/"
     ,"storage_element" : "T2_DE_RWTH"
     ,"user_remote_dir" : "/MyTestOutputRemoteDir/"
+    ,"check_user_remote_dir": 0
     #,"publish_data" : 1
     #,"publish_data_name" : "MyTestPublish"
     #,"dbs_url_for_publication" : "https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_02_writer/servlet/DBSServlet"

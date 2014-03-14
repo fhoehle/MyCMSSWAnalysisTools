@@ -231,7 +231,13 @@ class cmsswAnalysis(object):
           crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir="test")
           crabP.setCrabDir(sample.postfix,self.timeStamp,outputLocation)
           if self.args.maxGridEvents != -99:
-            sampDict["crabConfig"]["CMSSW"]["total_number_of_events"] = self.args.maxGridEvents
+            if sampDict.has_key("crabConfig"):
+              if  sampDict["crabConfig"].has_key("CMSSW"):
+                sampDict["crabConfig"]["CMSSW"]["total_number_of_events"]= self.args.maxGridEvents
+              else:
+                sampDict["crabConfig"]["CMSSW"] = {"total_number_of_events":self.args.maxGridEvents}
+            else:     
+              sampDict["crabConfig"] = {"CMSSW":{"total_number_of_events":self.args.maxGridEvents}}
           crabP.createCrabCfg(sampDict.get("crabConfig"))
           crabP.createCrabDir()
           crabP.writeCrabCfg()
