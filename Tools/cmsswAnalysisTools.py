@@ -144,7 +144,8 @@ class cmsswAnalysis(object):
         if self.useXRootDAccess:
           sample.useXRootDLocation()
         import CrabTools
-        sample.setDataset(postfix,debug=True)
+        if not hasattr (sample,"datasetName"):
+          sample.setDataset(postfix,debug=True)
         if self.args.runOnData:
           dataTriggers = analysisTriggers
           runRanges = []

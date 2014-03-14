@@ -208,13 +208,20 @@ def updateSubmitServer(newServer,dbFile,debug=False):
   conn.commit()
   print "updated to ",newServer
 ########
-def listCrabJobs(detailedInfo=False, timePoint = None,sorted=False):
+def getListOfCrabCfgsInDir (where='.'):
+  import glob
+  return glob.glob(where+'/*_CrabCfg.json')
+def getListOfCrabCfgs(where='.'):
   import fnmatch
-  import os,re
+  import os
   matches = []
-  for root, dirnames, filenames in os.walk(os.getenv('PWD')):
+  for root, dirnames, filenames in os.walk(os.getenv('PWD') if where == '.' else where):
     for filename in fnmatch.filter(filenames, '*CrabCfg.json'):
-      matches.append(os.path.join(root, filename)) 
+      matches.append(os.path.join(root, filename))
+  return matches
+def listCrabJobs(detailedInfo=False, timePoint = None,sorted=False):
+  import os,re
+  matches = getListOfCrabCfgs()
   if detailedInfo:
     print matches
     print "-----------"
