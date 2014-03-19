@@ -46,4 +46,7 @@ class AddFilterAndCreatePath(object):
    setattr(process,path.label()+"_"+filter.label()+"Path",newPath)
 #####################
 AddFilters = AddFilterAndCreatePath(True)
-
+#################################
+import re
+def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
+    return [int(text) if text.isdigit() else text.lower() for text in re.split(_nsre, s)]
