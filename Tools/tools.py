@@ -258,12 +258,17 @@ class processSample(object):
       except OSError:
         pass
 ##############
-def getFileMetaInformation(inputFiles,debug=False):
- import subprocess,os,json
- edmFileUtil_out = subprocess.Popen(["edmFileUtil -j "+" ".join(inputFiles)],shell=True,stdout=subprocess.PIPE,env=os.environ).communicate()[0]
- if debug:
-   print "edmFileUtil_out ",edmFileUtil_out
- return  json.loads(edmFileUtil_out)
+def getFileMetaInformation(inputFile,debug=False):
+  import subprocess,os,json
+  edmFileUtil_out = subprocess.Popen(["edmFileUtil -j "+inputFile],shell=True,stdout=subprocess.PIPE,env=os.environ).communicate()[0]
+  if debug:
+    print "edmFileUtil_out ",edmFileUtil_out
+  try:
+    return  json.loads(edmFileUtil_out)
+  except ValueError, e:
+    print "getFileMetaInformation "+inputFile+" not valid json: "
+    print edmFileUtil_out
+    return None
 ## bookKeeping
 class bookKeeping():
   def __init__(self,debug=False):
@@ -274,12 +279,14 @@ class bookKeeping():
       print "no bookKeeping, ",processSample
       return
     self.postfix = processSample.samp.postfix
-    inputFilesInfo = []
-    if len(processSample.tmpCfgFileLoaded.process.source.fileNames.value()):
-      inputFilesInfo = getFileMetaInformation(processSample.tmpCfgFileLoaded.process.source.fileNames.value(),self.debug)
-    maxInputEvts = sum([f["events"] for f in inputFilesInfo])
-    self.data[self.postfix] = {"totalEvents":maxInputEvts}
     maxEvtsProcess = processSample.tmpCfgFileLoaded.process.maxEvents.input.value()
+    maxInputEvts = 0
+    for inputF in processSample.tmpCfgFileLoaded.process.source.fileNames.value():
+      inputFileInfo = getFileMetaInformation(inputF,self.debug)
+      maxInputEvts +=inputFileInfo[0]["events"]
+      if maxEvtsProcess > 0 and maxEvtsProcess <= maxInputEvts:
+        break
+    self.data[self.postfix] = {"totalEvents":maxInputEvts}
     if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
       self.data[self.postfix]["totalEvents"] = maxEvtsProcess
     self.data[self.postfix]["cfg"] = processSample.newCfgName 
