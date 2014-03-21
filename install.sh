@@ -1,7 +1,7 @@
 #!/bin/bash
 pkgs=(
   "MyCrabTools ./ ./intall.sh"
-  "ParallelizationTools ./ .git 
+  "ParallelizationTools ./ .git"
 )
 cmsswVer=CMSSW_4_2_8_patch7
 ###################
