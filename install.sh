@@ -1,7 +1,8 @@
 #!/bin/bash
 pkgs=(
-  "MyCrabTools ./ ./intall.sh"
-  "ParallelizationTools ./ .git"
+  "MyCrabTools  $CMSSW_BASE ./install.sh"
+  "ParallelizationTools  $CMSSW_BASE ./install.sh"
+  "PyRoot_Helpers $HOME"
 )
 cmsswVer=CMSSW_4_2_8_patch7
 ###################
@@ -28,21 +29,19 @@ cd $CMSSW_BASE
 set -e
 # install my packages
 for idx in ${!pkgs[*]}; do
-  cd $CMSSW_BASE/`echo ${pkgs[$idx]} | awk '{print $2}'`
+  cd `echo ${pkgs[$idx]} | awk '{print $2}'`
   getGitPackage `echo ${pkgs[$idx]} | awk '{print $1}'`
   if  [ "X`echo ${pkgs[$idx]} | awk '{print $4}'`" != "X" ]; then
    git checkout `echo ${pkgs[$idx]} | awk '{print $4}'`
   fi
   if  [ "X`echo ${pkgs[$idx]} | awk '{print $3}'`" != "X" ]; then
     echo "calling additional command "`echo ${pkgs[$idx]} | awk '{print $3}'`
+    pwd
     eval `echo ${pkgs[$idx]} | awk '{print $3}'`
   fi
   cd $CMSSW_BASE
 done
 cd $CMSSW_BASE/src 
-addpkg FWCore/PythonUtilities
-cd $CMSSW_BASE
-cd $HOME
-git clone git@github.com:fhoehle/PyRoot_Helpers.git
+git cms-addpkg FWCore/PythonUtilities
 cd $CMSSW_BASE
 
