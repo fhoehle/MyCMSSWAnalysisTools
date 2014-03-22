@@ -18,6 +18,7 @@ class cmsswAnalysis(object):
     #opts, args = getopt.getopt(sys.argv[1:], '',['addOptions=','help','runGrid','runParallel=','specificSamples=','dontExec'])
     parser = argparse.ArgumentParser()
     parser.add_argument('--runGrid',action='store_true',default=False,help=' if crab should be called, specific crab arguments can be provided in sample dictionary')
+    parser.add_argument('--gridOutputDir',default='test',help=' outputDirectory used for gridJob Output')
     parser.add_argument('--maxGridEvents',default=-99,help=' max Events for GridJob')
     parser.add_argument('--dontExec',action='store_true',default=False,help=' don\'t call crab or run cfgs just create them and crab.cfg if is used')
     parser.add_argument('--addOptions',type=str,default='',help="options used for cfg compilation options like runOnTTbar=True or outputPath")
@@ -205,7 +206,7 @@ class cmsswAnalysis(object):
             if not sampDict["crabConfig"]["CMSSW"].has_key("lumis_per_job"):
               print "lumis_per_job given therefore used default ",default_lumis_per_job
               sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=default_lumis_per_job
-            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir="test")
+            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir=self.args.gridOutputDir+os.path.sep+self.outputDirectory)
             crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,outputLocation)
 	    keysToDelete = ['total_number_of_events',"number_of_jobs"]
             for kD in keysToDelete:
@@ -229,7 +230,7 @@ class cmsswAnalysis(object):
           processSample.createNewCfg()
           self.bookKeeping.bookKeep(processSample)
           sys.stdout.flush()
-          crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir="test")
+          crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir=self.args.gridOutputDir+os.path.sep+self.outputDirectory)
           crabP.setCrabDir(sample.postfix,self.timeStamp,outputLocation)
           if self.args.maxGridEvents != -99:
             if sampDict.has_key("crabConfig"):
