@@ -69,7 +69,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.timeSt = timeSt 
     self.addGridDir = addGridDir
     #print "self.addGridDir ",self.addGridDir," self.postfix ",self.postfix," self.timeSt ",self.timeSt 
-    self.user_remote_dir = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") + self.postfix+"_"+self.timeSt
+    self.user_remote_dir = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") #+ self.postfix+"_"+self.timeSt
     self.__type__="crabProcess"
     self.crabJobDir = None
     self.checkRequirements()
