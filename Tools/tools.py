@@ -374,4 +374,16 @@ def updateColorsBookKept(bookKept,inputDicts):
         return True
 def datasetToName(dsName):
   return dsName.strip().strip('/').replace('/','__')
+###############
+class frameworkJobReportParser (object):
+  def __init__(self,xmlFile):
+    import xml.dom.minidom as minidom
+    self.xmlFile = xmlFile
+    dom = minidom.parse(xmlFile)
+    self.FrameworkJobReport = coreTools.myGetSubNodeByName(dom,"FrameworkJobReport")
+  def getFileLFN(self):
+    import re
+    if not hasattr(self,'File'):
+      self.File = coreTools.myGetSubNodeByName(self.FrameworkJobReport,'File')
+    return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'LFN').childNodes])
 

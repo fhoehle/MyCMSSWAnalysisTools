@@ -2,6 +2,7 @@
 import sys,os
 sys.path.extend([ os.getenv('CMSSW_BASE')+os.path.sep+p for p in ['MyCrabTools','MyCMSSWAnalysisTools']])
 import crabDeamonTools
+import Tools.tools as tools
 crabCfg = {
   "CRAB" :{
     "jobtype":"cmssw"
@@ -166,19 +167,12 @@ class crabProcess(crabDeamonTools.crabDeamon):
         print "no directory res found in ",self.crabJobDir
       return None
     import glob
-    crab_fjr_list = glob.glob(cJ.crabJobDir+os.path.sep+'res/crab_fjr*.xml') 
-class frameworkJobReportParser (object):
-  def __init__(self,xmlFile):
-    import xml.dom.minidom as minidom
-    self.xmlFile = xmlFile
-    dom = minidom.parse(xmlFile)
-    self.FrameworkJobReport = myGetSubNodeByName(dom,"FrameworkJobReport")
-  def getFileLFN(self):
-    import re
-    if not hasattr(self,'File'):
-      self.File = myGetSubNodeByName(self.FrameworkJobReport,'File')
-    return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in myGetSubNodeByName(self.File,'LFN').childNodes])
-    
+    crab_fjr_list = glob.glob(self.crabJobDir+os.path.sep+'res/crab_fjr*.xml') 
+    outputFileList = []
+    for fjr in crab_fjr_list:
+      jobRep = tools.frameworkJobReportParser(fjr) 
+      outputFileList.append(jobRep.getFileLFN())
+    return outputFileList
 def commandAcGridFolder(command,gridFolder):
     import subprocess,os,sys
     command = 'uberftp grid-ftp " '+command+" "+gridFolder+'" ; echo "DONE"'
@@ -207,15 +201,6 @@ def loadCrabJob(jsonFilename):
     with open(jsonFilename , 'rb') as jsonFile:
       cP.__dict__ = json.load(jsonFile)
     return cP
-def myGetSubNodeByName(node,name): 
- if not node: 
-   return None 
- if not hasattr(node,'childNodes'): 
-   return None 
- for i,tmp_node in enumerate(node.childNodes): 
-  if tmp_node.nodeName == name: 
-   return tmp_node 
- return None
 def updateSubmitServer(newServer,dbFile,debug=False):
   import sqlite3 
   conn = sqlite3.connect(dbFile)

@@ -11,3 +11,13 @@ def checkCommandAbortIfFail(p):
 def getTimeStamp():
   import datetime,time
   return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')
+############################
+def myGetSubNodeByName(node,name):
+ if not node:
+   return None
+ if not hasattr(node,'childNodes'):
+   return None
+ for i,tmp_node in enumerate(node.childNodes):
+  if tmp_node.nodeName == name:
+   return tmp_node
+ return None
