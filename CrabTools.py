@@ -154,6 +154,31 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return '/pnfs/physik.rwth-aachen.de/cms/store/user/fhohle/'+self.crabCfg["USER"]["user_remote_dir"]
     else:
       return None
+  def gridOutputfileList(self,debug=False):
+    import os
+    if not self.crabJobDir:
+      if debug:
+        print "no self.crabJobDir found"
+      return None
+    resPath = self.crabJobDir+os.path.sep+'res/'
+    if not os.path.exists(resPath):
+      if debug:
+        print "no directory res found in ",self.crabJobDir
+      return None
+    import glob
+    crab_fjr_list = glob.glob(cJ.crabJobDir+os.path.sep+'res/crab_fjr*.xml') 
+class frameworkJobReportParser (object):
+  def __init__(self,xmlFile):
+    import xml.dom.minidom as minidom
+    self.xmlFile = xmlFile
+    dom = minidom.parse(xmlFile)
+    self.FrameworkJobReport = myGetSubNodeByName(dom,"FrameworkJobReport")
+  def getFileLFN(self):
+    import re
+    if not hasattr(self,'File'):
+      self.File = myGetSubNodeByName(self.FrameworkJobReport,'File')
+    return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in myGetSubNodeByName(self.File,'LFN').childNodes])
+    
 def commandAcGridFolder(command,gridFolder):
     import subprocess,os,sys
     command = 'uberftp grid-ftp " '+command+" "+gridFolder+'" ; echo "DONE"'
