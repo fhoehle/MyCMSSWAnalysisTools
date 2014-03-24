@@ -21,10 +21,10 @@ class theDasClient:
     self.das_h = self.opts.das_headers
     self.base = self.opts.base
     self.debug=debug
-  def getDataSetNameForFile(self,filename):
+  def getDataSetNameForFile(self,filename, addQuery = 'prod/global'):
     if self.debug:
       print "searching dataset for file ",filename
-    jsondict = self.myQuery("dataset file = "+filename)
+    jsondict = self.myQuery("dataset file = "+filename+" "+addQuery)
     if self.debug:
       print jsondict
     return [ str(ele.get('dataset')[0].get('name')) for ele in jsondict.get('data')]
