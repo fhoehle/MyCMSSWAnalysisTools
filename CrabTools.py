@@ -173,6 +173,17 @@ class crabProcess(crabDeamonTools.crabDeamon):
       jobRep = tools.frameworkJobReportParser(fjr) 
       outputFileList.append(jobRep.getFileLFN())
     return outputFileList
+def getCrabJobDatasetname(cJ,debug=False):
+  gridFileList = cJ.gridOutputfileList()
+  if not isinstance(gridFileList,list) or len(gridFileList) == 0:
+    print "gridFileList not valid ",gridFileList
+    return None
+  if debug:
+    print "gridFileList ",gridFileList
+  import MyDASTools.dasTools as dasTools
+  dasC = dasTools.myDasClient()
+  return dasC.getDataSetNameForFile(gridFileList[0],'instance=prod/phys03')
+#############################################################
 def commandAcGridFolder(command,gridFolder):
     import subprocess,os,sys
     command = 'uberftp grid-ftp " '+command+" "+gridFolder+'" ; echo "DONE"'
