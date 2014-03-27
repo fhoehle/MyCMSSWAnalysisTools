@@ -94,6 +94,7 @@ class cmsswAnalysis(object):
       self.newstdoutFile = open(self.newstdoutFile, 'w')
       self.stdoutBck= sys.stdout
       sys.stdout = self.newstdoutFile
+      print "was called by command "," ".join(sys.argv)
     ### json output
     self.bookKeeping = myTools.bookKeeping(debug=self.debug)
     ####
