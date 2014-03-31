@@ -34,16 +34,6 @@ class cmsswAnalysis(object):
     args = parser.parse_known_args()
     args,notKnownArgs = args
     self.debug = args.debug
-    self.outputDirectory = args.outputDirectory+self.timeStamp+os.path.sep
-    os.makedirs(os.path.dirname(self.outputDirectory))
-    if not self.debug:
-      self.newstdoutFile = self.outputDirectory+'log_'+self.timeStamp+'.txt'
-      print "capturing stdout in ",self.newstdoutFile
-      self.newstdoutFile = open(self.newstdoutFile, 'w')
-      self.stdoutBck= sys.stdout
-      sys.stdout = self.newstdoutFile
-      print "was called by command "," ".join(sys.argv)
-    self.useXRootDAccess = args.useXRootDAccess
     if args.usage:
       parser.print_help()
       print "========================"
@@ -59,6 +49,17 @@ class cmsswAnalysis(object):
     if args.showAvailableSamples:
       print 'available samples: ',self.samples.keys()
       sys.exit(0)
+    self.outputDirectory = args.outputDirectory+self.timeStamp+os.path.sep
+    os.makedirs(os.path.dirname(self.outputDirectory))
+    if not self.debug:
+      self.newstdoutFile = self.outputDirectory+'log_'+self.timeStamp+'.txt'
+      print "capturing stdout in ",self.newstdoutFile
+      self.newstdoutFile = open(self.newstdoutFile, 'w')
+      self.stdoutBck= sys.stdout
+      sys.stdout = self.newstdoutFile
+      print "was called by command "," ".join(sys.argv)
+    self.useXRootDAccess = args.useXRootDAccess
+
     self.notKnownArgs = notKnownArgs
     if self.debug:
       print "notKnown ",notKnownArgs
