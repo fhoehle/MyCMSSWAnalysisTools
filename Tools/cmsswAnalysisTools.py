@@ -33,9 +33,17 @@ class cmsswAnalysis(object):
     parser.add_argument('--useXRootDAccess',action='store_true',default=False,help=' if dcap door down use xrootd alternative access')
     args = parser.parse_known_args()
     args,notKnownArgs = args
-    self.useXRootDAccess = args.useXRootDAccess
     self.debug = args.debug
-    print args.usage
+    self.outputDirectory = args.outputDirectory+self.timeStamp+os.path.sep
+    os.makedirs(os.path.dirname(self.outputDirectory))
+    if not self.debug:
+      self.newstdoutFile = self.outputDirectory+'log_'+self.timeStamp+'.txt'
+      print "capturing stdout in ",self.newstdoutFile
+      self.newstdoutFile = open(self.newstdoutFile, 'w')
+      self.stdoutBck= sys.stdout
+      sys.stdout = self.newstdoutFile
+      print "was called by command "," ".join(sys.argv)
+    self.useXRootDAccess = args.useXRootDAccess
     if args.usage:
       parser.print_help()
       print "========================"
@@ -51,9 +59,9 @@ class cmsswAnalysis(object):
     if args.showAvailableSamples:
       print 'available samples: ',self.samples.keys()
       sys.exit(0)
-    print "args ",args
     self.notKnownArgs = notKnownArgs
-    print "notKnown ",notKnownArgs
+    if self.debug:
+      print "notKnown ",notKnownArgs
     self.numProcesses=3
     if args.runParallel != False:
       self.numProcesses = int(args.runParallel)
@@ -79,9 +87,7 @@ class cmsswAnalysis(object):
       if reOpt:
         options[reOpt.group(1)]=reOpt.group(2)
     print "all options ",options
-    if not self.debug:
-      self.newstdoutFile = self.outputDirectory+'log_'+self.timeStamp+'.txt'
-      print "capturing stdout in ",self.newstdoutFile
+
     self.options =options
     self.args = args
     if self.debug:
@@ -89,12 +95,7 @@ class cmsswAnalysis(object):
 ## preparing cfg with additional options
 #make tmp copy  
   def startAnalysis(self):
-    os.makedirs(os.path.dirname(self.outputDirectory))
-    if not self.debug:
-      self.newstdoutFile = open(self.newstdoutFile, 'w')
-      self.stdoutBck= sys.stdout
-      sys.stdout = self.newstdoutFile
-      print "was called by command "," ".join(sys.argv)
+
     ### json output
     self.bookKeeping = myTools.bookKeeping(debug=self.debug)
     ####
