@@ -155,7 +155,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return '/pnfs/physik.rwth-aachen.de/cms/store/user/fhohle/'+self.crabCfg["USER"]["user_remote_dir"]
     else:
       return None
-  def gridOutputfileList(self,debug=False):
+  def gridFJRgoodJobs(self,debug=False):
     import os
     if not self.crabJobDir:
       if debug:
@@ -166,13 +166,51 @@ class crabProcess(crabDeamonTools.crabDeamon):
       if debug:
         print "no directory res found in ",self.crabJobDir
       return None
-    import glob
-    crab_fjr_list = glob.glob(self.crabJobDir+os.path.sep+'res/crab_fjr*.xml') 
+    return [ resPath + 'crab_fjr_'+str(no)+'.xml' for no in self.jobRetrievedGood() ] 
+
+  def gridOutputfileList(self,debug=False):
     outputFileList = []
+    crab_fjr_list = self.gridFJRgoodJobs(debug=debug)
+    if debug:
+      print crab_fjr_list
     for fjr in crab_fjr_list:
       jobRep = tools.frameworkJobReportParser(fjr) 
       outputFileList.append(jobRep.getFileLFN())
     return outputFileList
+  def writeOutputFileList(self):
+    if not self.crabDir:
+      print "no crabDir set"
+      return None
+    outFileList = open(self.crabDir+'/'+self.postfix+'_gridOutputFiles.txt','w')
+    for f in self.gridOutputfileList():
+      outFileList.write(f+'\n')
+    outFileList.close()
+    return outFileList.name
+  def getMergedOutput(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
+    fjrs = self.gridFJRgoodJobs(debug=debug);outputSize=0
+    for fjr in fjrs:
+      fjr = tools.frameworkJobReportParser(fjr)
+      outputSize += int(fjr.getFileSize())
+    print "estimated outputSize ",outputSize
+    if outputSize > 10000000000:
+      print "too big"
+      sys.exit(1)
+    inputFileList = self.writeOutputFileList()
+    import re
+    if not os.path.exists(where):
+      os.makedirs(where)
+    outputFilename=where+'/'+self.postfix+'_'+re.match('.*\/([^\/]*_)[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',fjr.getFileLFN()).group(1)+'merged'
+    mergeCmd='edmCopyPickMerge inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts+">& "+where+"/outputFilename_copyPickMerge.log "
+    if debug:
+      print "mergeCmd ",mergeCmd
+    mergeJob = tools.coreTools.executeCommandSameEnv(mergeCmd)
+    mergeJob.wait()
+    if mergeJob.returncode == 0:
+      return outputFilename+".root"
+    else:
+      print "merging Failed"
+      sys.exit(1)
+    
 def getCrabJobDatasetname(cJ,debug=False):
   gridFileList = cJ.gridOutputfileList()
   if not isinstance(gridFileList,list) or len(gridFileList) == 0:
