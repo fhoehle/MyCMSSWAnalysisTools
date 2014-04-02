@@ -46,4 +46,5 @@ git cms-addpkg FWCore/PythonUtilities
 cd $CMSSW_BASE
 cd $CMSSW_BASE/src
 git cms-addpkg PhysicsTools/Utilities
+git am --signoff < copyPickMerge_patch.txt
 cd $CMSSW_BASE

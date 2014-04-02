@@ -1,0 +1,88 @@
+From 77bd828b9396a9a461a1b35d9ad56a80a03850b5 Mon Sep 17 00:00:00 2001
+From: Felix Hoehle <hoehle@physik.rwth-aachen.de>
+Date: Wed, 2 Apr 2014 14:08:45 +0200
+Subject: [PATCH 1/3] added reportEvery commandline parameter
+
+---
+ PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py b/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
+index f475ac8..f46ff78 100644
+--- a/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
++++ b/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
+@@ -14,9 +14,13 @@ options.register ('maxSize',
+ 				  VarParsing.multiplicity.singleton,
+ 				  VarParsing.varType.int,
+ 				  "Maximum (suggested) file size (in Kb)")
++options.register('reportEvery', 1000, VarParsing.multiplicity.singleton,
++                                  VarParsing.varType.int,
++                                  "report every n events") 
+ options.parseArguments()
+-
+ process = cms.Process("PickEvent")
++process.load("FWCore.MessageService.MessageLogger_cfi")
++process.MessageLogger.cerr.FwkReport.reportEvery = options.reportEvery
+ process.source = cms.Source ("PoolSource",
+ 	  fileNames = cms.untracked.vstring (options.inputFiles),
+ )
+-- 
+1.7.12.4
+
+
+From 89cce5d00fc9ffc58ab7d511c1902dc4aa032549 Mon Sep 17 00:00:00 2001
+From: Felix Hoehle <hoehle@physik.rwth-aachen.de>
+Date: Wed, 2 Apr 2014 14:41:22 +0200
+Subject: [PATCH 2/3] deleted space, which was causing patch warnings
+
+---
+ PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py b/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
+index f46ff78..7740387 100644
+--- a/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
++++ b/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
+@@ -16,7 +16,7 @@ options.register ('maxSize',
+ 				  "Maximum (suggested) file size (in Kb)")
+ options.register('reportEvery', 1000, VarParsing.multiplicity.singleton,
+                                   VarParsing.varType.int,
+-                                  "report every n events") 
++                                  "report every n events")
+ options.parseArguments()
+ process = cms.Process("PickEvent")
+ process.load("FWCore.MessageService.MessageLogger_cfi")
+-- 
+1.7.12.4
+
+
+From 0e0bca20387579cd3a387bcfee312f7dc330af94 Mon Sep 17 00:00:00 2001
+From: Felix Hoehle <hoehle@physik.rwth-aachen.de>
+Date: Wed, 2 Apr 2014 14:48:24 +0200
+Subject: [PATCH 3/3] white space fix
+
+---
+ PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py b/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
+index 7740387..836e8d7 100644
+--- a/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
++++ b/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py
+@@ -14,10 +14,12 @@ options.register ('maxSize',
+ 				  VarParsing.multiplicity.singleton,
+ 				  VarParsing.varType.int,
+ 				  "Maximum (suggested) file size (in Kb)")
+-options.register('reportEvery', 1000, VarParsing.multiplicity.singleton,
++options.register('reportEvery',
++                                  1000, VarParsing.multiplicity.singleton,
+                                   VarParsing.varType.int,
+                                   "report every n events")
+ options.parseArguments()
++
+ process = cms.Process("PickEvent")
+ process.load("FWCore.MessageService.MessageLogger_cfi")
+ process.MessageLogger.cerr.FwkReport.reportEvery = options.reportEvery
+-- 
+1.7.12.4
+
