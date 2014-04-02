@@ -381,9 +381,15 @@ class frameworkJobReportParser (object):
     self.xmlFile = xmlFile
     dom = minidom.parse(xmlFile)
     self.FrameworkJobReport = coreTools.myGetSubNodeByName(dom,"FrameworkJobReport")
+  def getFile(self):
+    self.File = coreTools.myGetSubNodeByName(self.FrameworkJobReport,'File')
   def getFileLFN(self):
     import re
     if not hasattr(self,'File'):
-      self.File = coreTools.myGetSubNodeByName(self.FrameworkJobReport,'File')
+      self.getFile()
     return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'LFN').childNodes])
-
+  def getFileSize(self):
+    import re
+    if not hasattr(self,'File'):
+      self.getFile()
+    return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'Size').childNodes])
