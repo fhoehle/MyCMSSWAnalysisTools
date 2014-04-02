@@ -44,4 +44,6 @@ done
 cd $CMSSW_BASE/src 
 git cms-addpkg FWCore/PythonUtilities
 cd $CMSSW_BASE
-
+cd $CMSSW_BASE/src
+git cms-addpkg PhysicsTools/Utilities
+cd $CMSSW_BASE
