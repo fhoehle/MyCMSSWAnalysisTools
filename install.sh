@@ -48,3 +48,4 @@ cd $CMSSW_BASE/src
 git cms-addpkg PhysicsTools/Utilities
 git am --signoff < $CMSSW_BASE/MyCMSSWAnalysisTools/copyPickMerge_patch.txt
 cd $CMSSW_BASE
+scram b -j 5 
