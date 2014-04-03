@@ -197,10 +197,11 @@ class crabProcess(crabDeamonTools.crabDeamon):
       sys.exit(1)
     inputFileList = self.writeOutputFileList()
     import re
-    if not os.path.exists(where):
-      os.makedirs(where)
-    outputFilename=where+'/'+self.postfix+'_'+re.match('.*\/([^\/]*_)[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',fjr.getFileLFN()).group(1)+'merged'
-    mergeCmd='edmCopyPickMerge inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts+">& "+where+"/outputFilename_copyPickMerge.log "
+    baseOutputDir=where+'/'+self.postfix+'_'+self.timeSt+'/'
+    if not os.path.exists(baseOutputDir):
+      os.makedirs(baseOutputDir)
+    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',fjr.getFileLFN()).group(1)+'merged'
+    mergeCmd='edmCopyPickMerge inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts+">& "+baseOutputDir+"/outputFilename_copyPickMerge.log "
     if debug:
       print "mergeCmd ",mergeCmd
     mergeJob = tools.coreTools.executeCommandSameEnv(mergeCmd)
