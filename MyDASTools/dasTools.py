@@ -31,6 +31,9 @@ class theDasClient:
   def getSitesForDataset(self,dataset):
     jsondict = self.myQuery("site dataset="+dataset)
     return [ str(ele.get('site')[0].get('name')) for ele in jsondict.get('data')]
+  def getSizeForDataset(self,dataset):
+    jsondict = self.myQuery("dataset dataset="+dataset+" | grep dataset.size")
+    return " ".join([str(i["size"]) for i in jsondict['data'][0]['dataset'] if i.has_key('size')]) 
   def getRunsFromDatasetname(self,datasetName):
     runsDAS = self.myQuery("run dataset = "+datasetName)
     runs = []
