@@ -1,6 +1,6 @@
 ### default dict
 import sys,os
-sys.path.extend([ os.getenv('CMSSW_BASE')+os.path.sep+p for p in ['MyCrabTools','MyCMSSWAnalysisTools']])
+sys.path.extend([ os.getenv('CMSSW_BASE')+os.path.sep+p for p in ['MyCrabTools','MyCMSSWAnalysisTools','ParallelizationTools']])
 import crabDeamonTools
 import Tools.tools as tools
 crabCfg = {
@@ -186,7 +186,9 @@ class crabProcess(crabDeamonTools.crabDeamon):
       outFileList.write(f+'\n')
     outFileList.close()
     return outFileList.name
-  def getMergedOutput(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
+  def createMergeCfg(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
+    if hasattr(self,'isMerged') and self.isMerged == True:
+      return self.mergedFilename
     fjrs = self.gridFJRgoodJobs(debug=debug);outputSize=0
     for fjr in fjrs:
       fjr = tools.frameworkJobReportParser(fjr)
@@ -201,17 +203,53 @@ class crabProcess(crabDeamonTools.crabDeamon):
     if not os.path.exists(baseOutputDir):
       os.makedirs(baseOutputDir)
     outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',fjr.getFileLFN()).group(1)+'merged'
-    mergeCmd='edmCopyPickMerge inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts+">& "+baseOutputDir+"/outputFilename_copyPickMerge.log "
+    # create merge cfg
+    mergeTempCmd = os.getenv('CMSSW_BASE')+'/src/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts
     if debug:
-      print "mergeCmd ",mergeCmd
-    mergeJob = tools.coreTools.executeCommandSameEnv(mergeCmd)
-    mergeJob.wait()
-    if mergeJob.returncode == 0:
-      return outputFilename+".root"
+      print "mergeTempCmd ",mergeTempCmd
+    with open(baseOutputDir+'settings.txt','w') as settingFile:
+      settingFile.write(mergeTempCmd)
+    self.mergeCfg = baseOutputDir+'/copyPickMerge_cfg.py'
+    createCfgCmd = 'ipython -c "exec(\\\"import IPython.ipapi\\nip = IPython.ipapi.get()\\nip.magic(\'run '+mergeTempCmd+'\')\\nf=open(\''+self.mergeCfg+'\',\'w\')\\nf.write(process.dumpPython())\\nf.close()\\\")"'
+    if debug:
+      print "createCfgCmd ",createCfgCmd
+    createCfgJob = tools.coreTools.executeCommandSameEnv(createCfgCmd)
+    createCfgJob.wait()
+    if createCfgJob.returncode == 0:
+      self.mergeCfgCreated = True
+      self.outputFilename = outputFilename
+      print "mergeCfg ",self.mergeCfg
     else:
-      print "merging Failed"
-      sys.exit(1)
-    
+      print "mergeCfg creation failed"
+    return createCfgJob.returncode
+   
+  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts=""):
+    createMergeCfg = self.createMergeCfg(where=where,debug=debug,cmsswOpts=cmsswOpts)
+    if not createMergeCfg == 0:
+      return None
+    if not parallel:
+      mergeCmd='cmsRun '+self.mergeCfg+">& "+self.mergeCfg.strip()+"_log.txt "
+      if debug:
+        print "mergeCmd ",mergeCmd
+      mergeJob = tools.coreTools.executeCommandSameEnv(mergeCmd)
+      mergeJob.wait()
+      if mergeJob.returncode == 0:
+        self.isMerged=True
+        outputFilename = self.outputFilename+".root"
+        self.mergedFilename = outputFilename
+        return outputFilename
+      else:
+        print "merging Failed"
+        print mergeCmd
+    else:
+      noJobs=self.mergeNoJobs if hasattr(self,'mergeNoJobs') else 11
+      noParallel=self.mergeNoParallel if hasattr(self,'mergeNoParallel') else 3
+      import CMSSWParallel.cmsswParallel as cmsParallel
+      pR = cmsParallel.parallelRunner(self.mergeCfg,noParallel,noJobs,'',debug)
+      pR.createCfgs()
+      t= pR.runParallel()
+      return t
+   
 def getCrabJobDatasetname(cJ,debug=False):
   gridFileList = cJ.gridOutputfileList()
   if not isinstance(gridFileList,list) or len(gridFileList) == 0:
