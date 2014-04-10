@@ -47,20 +47,48 @@ function getCMSGitPackage {
   echo "pkg "$pkg
   subPkg=`echo $1 | sed 's/^[^\/]\+\/\([^\/]\+\)\/*$/\1/'`
   echo "subPkg "$subPkg
-  if [ -d "$1" ]; then
+  sparseSubPkg=$(grep -F "$1" $CMSSW_BASE/src/.git/info/sparse-checkout || echo "")
+  echo "test1 $sparseSubPkg"
+  sparsePkg=$(grep -F "$pkg" $CMSSW_BASE/src/.git/info/sparse-checkout || echo "")
+  echo "test $sparsePkg"
+  if [ -d "$1" ] && [ "$sparseSubPkg" != "" ]; then
     echo "cms package already there $1"
-  elif [ -d "$pkg" ]; then
-    echo "package there"
-    pkgbck=${pkg}_bck
-    echo $pkgbck
+  elif [ -d "$1" ] && [ "$sparseSubPkg" == "" ]; then
+    echo "Warning package there but not CMS git"
+  elif [ -d "$pkg" ] && [ "$sparsePkg" != "" ]; then
+    echo "package $pkg is know, using git cms-addpkg"
+    git cms-addpkg $1
+  elif [ -d "$pkg" ] && [ "$sparsePkg" == "" ]; then
+    echo "will backup exsting pkgs in $pkg and later copy back"
+    tmpSrc=$CMSSW_BASE/tmpSrc
+    mkdir -p $tmpSrc
+    pkgbck=${tmpSrc}/${pkg}_bck
+    echo "backupCopy of content of $pkg in $pkgbck"
     mv $pkg $pkgbck
     git cms-addpkg $1
-    cp $pkgbck/* $pkg/
+    cp -r $pkgbck/* $pkg/
     rm -rf $pkgbck
+  elif [ ! -d "$pkg" ]; then
+    echo "installing via git cms-addpkg"
+    git cms-addpkg $1
+  else
+    echo "this should not happend, trying to get $1"
+    ls
   fi
+  #elif [ -d "$pkg" ]; then
+  #  echo "package there"
+  #  tmpSrc=$CMSSW_BASE/tmpSrc
+  #  mkdir $tmpSrc
+  #  pkgbck=${tmpSrc}/${pkg}_bck
+  #  echo $pkgbck
+  #  mv $pkg $pkgbck
+  #  git cms-addpkg $1
+  #  cp $pkgbck/* $pkg/
+  #  rm -rf $pkgbck
+  #fi
   cd $CMSSW_BASE
 }
-
+echo "start"
 getCMSGitPackage FWCore/PythonUtilities
 #cd $CMSSW_BASE
 #cd $CMSSW_BASE/src
