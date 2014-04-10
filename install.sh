@@ -1,9 +1,9 @@
 #!/bin/bash
-pkgs=(
-  "MyCrabTools  $CMSSW_BASE ./install.sh"
-  "ParallelizationTools  $CMSSW_BASE ./install.sh"
-  "PyRoot_Helpers $HOME"
-)
+#pkgs=(
+#  "MyCrabTools  $CMSSW_BASE ./install.sh"
+#  "ParallelizationTools  $CMSSW_BASE ./install.sh"
+#  "PyRoot_Helpers $HOME"
+#)
 cmsswVer=CMSSW_4_2_8_patch7
 ###################
 function getGitPackage {
@@ -41,11 +41,30 @@ for idx in ${!pkgs[*]}; do
   fi
   cd $CMSSW_BASE
 done
-cd $CMSSW_BASE/src 
-git cms-addpkg FWCore/PythonUtilities
-cd $CMSSW_BASE
-cd $CMSSW_BASE/src
-git cms-addpkg PhysicsTools/Utilities
-git am --signoff < $CMSSW_BASE/MyCMSSWAnalysisTools/copyPickMerge_patch.txt
-cd $CMSSW_BASE
-scram b -j 5 
+function getCMSGitPackage {
+  cd $CMSSW_BASE/src
+  pkg=`echo $1 | sed 's/^\([^\/]\+\)\/[^\/]\+\/*$/\1/'`
+  echo "pkg "$pkg
+  subPkg=`echo $1 | sed 's/^[^\/]\+\/\([^\/]\+\)\/*$/\1/'`
+  echo "subPkg "$subPkg
+  if [ -d "$1" ]; then
+    echo "cms package already there $1"
+  elif [ -d "$pkg" ]; then
+    echo "package there"
+    pkgbck=${pkg}_bck
+    echo $pkgbck
+    mv $pkg $pkgbck
+    git cms-addpkg $1
+    cp $pkgbck/* $pkg/
+    rm -rf $pkgbck
+  fi
+  cd $CMSSW_BASE
+}
+
+getCMSGitPackage FWCore/PythonUtilities
+#cd $CMSSW_BASE
+#cd $CMSSW_BASE/src
+#git cms-addpkg PhysicsTools/Utilities
+#git am --signoff < $CMSSW_BASE/MyCMSSWAnalysisTools/copyPickMerge_patch.txt
+#cd $CMSSW_BASE
+#scram b -j 5 
