@@ -188,13 +188,13 @@ class crabProcess(crabDeamonTools.crabDeamon):
     return outFileList.name
   def createMergeCfg(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
     if hasattr(self,'isMerged') and self.isMerged == True:
-      return self.mergedFilename
+      return 0
     fjrs = self.gridFJRgoodJobs(debug=debug);outputSize=0
     for fjr in fjrs:
       fjr = tools.frameworkJobReportParser(fjr)
       outputSize += int(fjr.getFileSize())
     print "estimated outputSize ",outputSize
-    if outputSize > 10000000000:
+    if outputSize > 10000000000 and ( not hasattr(self,'mergeSizeNeglect') or not self.mergeSizeNeglect):
       print "too big"
       sys.exit(1)
     inputFileList = self.writeOutputFileList()
@@ -248,6 +248,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
       pR = cmsParallel.parallelRunner(self.mergeCfg,noParallel,noJobs,'',debug)
       pR.createCfgs()
       t= pR.runParallel()
+      if t == 0:
+        self.isMerged=True
       return t
    
 def getCrabJobDatasetname(cJ,debug=False):
