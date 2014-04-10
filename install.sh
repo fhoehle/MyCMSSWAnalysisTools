@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 pkgs=(
   "MyCrabTools  $CMSSW_BASE ./install.sh"
   "ParallelizationTools  $CMSSW_BASE ./install.sh"
@@ -80,4 +80,4 @@ getCMSGitPackage PhysicsTools/Utilities
 cd $CMSSW_BASE/src
 git am --signoff < $CMSSW_BASE/MyCMSSWAnalysisTools/copyPickMerge_patch.txt
 cd $CMSSW_BASE
-#scram b -j 5 
+scram b -j 5 
