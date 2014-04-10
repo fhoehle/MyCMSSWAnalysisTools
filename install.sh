@@ -1,9 +1,9 @@
-#!/bin/bash
-#pkgs=(
-#  "MyCrabTools  $CMSSW_BASE ./install.sh"
-#  "ParallelizationTools  $CMSSW_BASE ./install.sh"
-#  "PyRoot_Helpers $HOME"
-#)
+!/bin/bash
+pkgs=(
+  "MyCrabTools  $CMSSW_BASE ./install.sh"
+  "ParallelizationTools  $CMSSW_BASE ./install.sh"
+  "PyRoot_Helpers $HOME"
+)
 cmsswVer=CMSSW_4_2_8_patch7
 ###################
 function getGitPackage {
