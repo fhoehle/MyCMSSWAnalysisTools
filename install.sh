@@ -63,7 +63,7 @@ function getCMSGitPackage {
     echo "backupCopy of content of $pkg in $pkgbck"
     mv $pkg $pkgbck
     git cms-addpkg $1
-    cp -r $pkgbck/* $pkg/
+    cp -r $pkgbck/$pkg/* $pkg/
     rm -rf $pkgbck
   elif [ ! -d "$pkg" ]; then
     echo "installing via git cms-addpkg"
