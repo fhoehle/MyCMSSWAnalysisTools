@@ -246,7 +246,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       noParallel=self.mergeNoParallel if hasattr(self,'mergeNoParallel') else 3
       import CMSSWParallel.cmsswParallel as cmsParallel
       pR = cmsParallel.parallelRunner(self.mergeCfg,noParallel,noJobs,'',debug)
-      pR.createCfgs()
+      self.mergeCmds = pR.createCfgs()
       t= pR.runParallel()
       if t == 0:
         self.isMerged=True
