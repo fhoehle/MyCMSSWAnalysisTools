@@ -327,7 +327,7 @@ def removeOptFromArgv(opt,rem = False):
       sys.argv.pop(idx+1)
     sys.argv.remove(optFound)
 ###
-def compileCfg(cfg,options,postfix=""):
+def compileCfg(cfg,options,postfix="",debug=False):
   import os,shutil
   cpCfg = os.path.splitext(cfg)[0]+"_compileTMP"+os.path.splitext(cfg)[1]
   shutil.copyfile(cfg,cpCfg)
@@ -336,7 +336,10 @@ def compileCfg(cfg,options,postfix=""):
     cfgAddLine.write('myTmpFile = open ("'+cfgDumpPython+'","w"); myTmpFile.write(process.dumpPython()); myTmpFile.close() # added by script in order to dump/compile cfg');
   import subprocess
   print "compiling options ",options
-  buildFile = subprocess.Popen(["python "+cpCfg+" "+options],shell=True,stdout=subprocess.PIPE,env=os.environ)
+  compileCmd = "python "+cpCfg+" "+options
+  if debug:
+    print "compileCfg compileCmd: ",compileCmd
+  buildFile = subprocess.Popen([compileCmd],shell=True,stdout=subprocess.PIPE,env=os.environ)
   buildFile.wait()
   errorcode = buildFile.returncode
   if errorcode != 0:

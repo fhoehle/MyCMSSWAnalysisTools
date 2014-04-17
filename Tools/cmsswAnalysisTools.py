@@ -125,9 +125,9 @@ class cmsswAnalysis(object):
       if not self.runGrid:
         if self.args.runOnData:  # set runRange 
           import lumiListFromFile
-          fileRuns = lumiListFromFile.getLumiListFromFile('dcap://grid-dcap.physik.rwth-aachen.de/pnfs/physik.rwth-aachen.de/cms'+sampDict["localFile"] if sampDict["localFile"].startswith('/store/') else sampDict["localFile"][5:]).getRuns()
+          fileRuns = lumiListFromFile.getLumiListFromFile('dcap://grid-dcap-extern.physik.rwth-aachen.de/pnfs/physik.rwth-aachen.de/cms'+sampDict["localFile"] if sampDict["localFile"].startswith('/store/') else sampDict["localFile"][5:]).getRuns()
           runRange=" runRange="+fileRuns[0]+"-"+fileRuns[-1]
-        cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts) + runRange,postfix ) 
+        cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts) + runRange,postfix,debug= self.debug ) 
         processSample =  myTools.processSample(cfgSamp)
         sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
         sample.loadDict(sampDict)
@@ -193,7 +193,7 @@ class cmsswAnalysis(object):
             if self.debug:
               print "writing ",shJ.JSONfileName
             shJ.writeJSON(shJ.JSONfileName) 
-            cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts)+" runRange="+shJ.getRuns()[0]+"-"+shJ.getRuns()[-1],postfix+"_"+shJ.label ) 
+            cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts)+" runRange="+shJ.getRuns()[0]+"-"+shJ.getRuns()[-1],postfix+"_"+shJ.label ,debug= self.debug) 
             processSample =  myTools.processSample(cfgSamp)
             processSample.applyChanges(sample)
             print "processing ",postfix," ",sampDict["localFile"]
@@ -223,7 +223,7 @@ class cmsswAnalysis(object):
 
            #print "this many lumis ",len(shJ.getLumis())
         else:
-          cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts) + runRange,postfix )
+          cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts) + runRange,postfix ,debug= self.debug)
           processSample =  myTools.processSample(cfgSamp)
           processSample.applyChanges(sample)
           print "processing ",postfix," ",sampDict["localFile"]
