@@ -57,7 +57,7 @@ class cmsswAnalysis(object):
       self.newstdoutFile = open(self.newstdoutFile, 'w')
       self.stdoutBck= sys.stdout
       sys.stdout = self.newstdoutFile
-      print "was called by command: ",os.getenv('PWD')," ".join(sys.argv)
+      print "was called by command: ",os.getenv('PWD')," ".join([("\"" +arg.strip()+"\"" if " " in arg.strip() else arg) for arg in  sys.argv])
       print self.timeStamp
       print "input samples ",self.samples.keys()
     self.useXRootDAccess = args.useXRootDAccess
