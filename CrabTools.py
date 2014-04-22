@@ -224,6 +224,12 @@ class crabProcess(crabDeamonTools.crabDeamon):
     return createCfgJob.returncode
    
   def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts=""):
+    if hasattr(self,'isMerged') and self.isMerged:
+      print self.postfix
+      print "no merging needed, self.isMerged=True "
+      return 0
+    else:
+      self.isMerged = False
     createMergeCfg = self.createMergeCfg(where=where,debug=debug,cmsswOpts=cmsswOpts)
     if not createMergeCfg == 0:
       return None
