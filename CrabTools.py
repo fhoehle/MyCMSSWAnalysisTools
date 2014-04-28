@@ -202,7 +202,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
     baseOutputDir=where+'/'+self.postfix+'_'+self.timeSt+'/'
     if not os.path.exists(baseOutputDir):
       os.makedirs(baseOutputDir)
-    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',fjr.getFileLFN()).group(1)+'merged'
+    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',fjr.getFileLFN()).group(1)+self.timeSt+'_merged'
     # create merge cfg
     mergeTempCmd = os.getenv('CMSSW_BASE')+'/src/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts
     if debug:
