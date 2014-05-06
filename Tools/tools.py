@@ -113,6 +113,10 @@ def getDatasetNameFromString(DatasetNameInString,debug=False):
   if debug:
     print " datasetName ",datasetName
   return datasetName
+def getStringFromDatasetName(datasetName):
+  return re.sub('/','__',datasetName.lstrip('/'))
+def getLabelFromDatasetName(datasetName):
+  return re.sub('/','_',datasetName.strip('/').rstrip('AOD')).rstrip('_')
 ########################
 class processSample(object):
   def __init__(self,cfgFileName,debug=False):
