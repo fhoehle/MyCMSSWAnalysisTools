@@ -8,7 +8,7 @@ crabCfg = {
     "jobtype":"cmssw"
     ,"scheduler" : "remoteGlidein" #sge
     #,"server_name" : "legnaro"
-    #,"submit_host": "cern_vocms20"
+    ,"submit_host": "cern_vocms83"
     ,"use_server" : 0
     }
   #,"SGE":{
@@ -223,7 +223,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       print "mergeCfg creation failed"
     return createCfgJob.returncode
    
-  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts=""):
+  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts="",dontExec=False):
     if hasattr(self,'isMerged') and self.isMerged:
       print self.postfix
       print "no merging needed, self.isMerged=True "
@@ -237,6 +237,9 @@ class crabProcess(crabDeamonTools.crabDeamon):
       mergeCmd='cmsRun '+self.mergeCfg+">& "+self.mergeCfg.strip()+"_log.txt "
       if debug:
         print "mergeCmd ",mergeCmd
+      if dontExec:
+        print mergeCmd
+        return mergeCmd
       mergeJob = tools.coreTools.executeCommandSameEnv(mergeCmd)
       mergeJob.wait()
       if mergeJob.returncode == 0:
@@ -247,16 +250,22 @@ class crabProcess(crabDeamonTools.crabDeamon):
       else:
         print "merging Failed"
         print mergeCmd
+        return 1
     else:
       noJobs=self.mergeNoJobs if hasattr(self,'mergeNoJobs') else 11
       noParallel=self.mergeNoParallel if hasattr(self,'mergeNoParallel') else 3
       import CMSSWParallel.cmsswParallel as cmsParallel
-      pR = cmsParallel.parallelRunner(self.mergeCfg,noParallel,noJobs,'',debug)
-      self.mergeCmds = pR.createCfgs()
-      t= pR.runParallel()
-      if t == 0:
-        self.isMerged=True
-      return t
+      if dontExec:
+        cmd = "cd "+os.path.dirname(self.mergeCfg)+" && "+os.getenv('CMSSW_BASE')+'/ParallelizationTools/CMSSWParallel/cmsswParallel.py --numProcesses '+str(noParallel)+" --numJobs "+str(noJobs)+" --cfgFileName "+self.mergeCfg
+        print cmd
+        return cmd
+      else:
+        pR = cmsParallel.parallelRunner(self.mergeCfg,noParallel,noJobs,'',debug)
+        self.mergeCmds = pR.createCfgs()
+        t= pR.runParallel()
+        if t == 0:
+          self.isMerged=True
+        return t
    
 def getCrabJobDatasetname(cJ,debug=False):
   gridFileList = cJ.gridOutputfileList()
@@ -296,6 +305,7 @@ def loadCrabJob(jsonFilename):
       cP = json.load(jsonFile,object_hook=objD)
     with open(jsonFilename , 'rb') as jsonFile:
       cP.__dict__ = json.load(jsonFile)
+    cP.loadedFromCrabJson = jsonFilename
     return cP
 def updateSubmitServer(newServer,dbFile,debug=False):
   import sqlite3 
