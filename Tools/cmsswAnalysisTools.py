@@ -29,7 +29,7 @@ class cmsswAnalysis(object):
     parser.add_argument('--usage',action='store_true',default=False,help='help message')
     parser.add_argument('--showAvailableSamples',action='store_true',default=False,help='show samples which can be processed')
     parser.add_argument('--runOnData',action='store_true',default=False,help=' activate running on data, will be transmitted to addOptions of cfg')
-    parser.add_argument('--outputDirectory',default=os.getenv("PWD")+os.path.sep+'TMP_',help='dircetory where output is stored with additional timeStamp')
+    parser.add_argument('--outputDirectory',default=os.getenv("PWD")+os.path.sep+'TMP',help='dircetory where output is stored with additional timeStamp')
     parser.add_argument('--useXRootDAccess',action='store_true',default=False,help=' if dcap door down use xrootd alternative access')
     args = parser.parse_known_args()
     args,notKnownArgs = args
@@ -49,7 +49,7 @@ class cmsswAnalysis(object):
     if args.showAvailableSamples:
       print 'available samples: ',self.samples.keys()
       sys.exit(0)
-    self.outputDirectory = (os.getenv('PWD')+os.path.sep if not os.path.exists(args.outputDirectory+os.path.sep+"..") else "" )+args.outputDirectory+self.timeStamp+os.path.sep
+    self.outputDirectory = (args.outputDirectory if os.path.exists(os.path.dirname(args.outputDirectory.rstrip('/.'))) else os.getenv('PWD')+os.path.sep +args.outputDirectory )+("" if args.outputDirectory.endswith('/') else "_") +self.timeStamp+os.path.sep
     os.makedirs(os.path.dirname(self.outputDirectory))
     if not self.debug:
       self.newstdoutFile = self.outputDirectory+'log_'+self.timeStamp+'.txt'
