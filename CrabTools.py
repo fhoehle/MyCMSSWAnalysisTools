@@ -190,19 +190,21 @@ class crabProcess(crabDeamonTools.crabDeamon):
     if hasattr(self,'isMerged') and self.isMerged == True:
       return 0
     fjrs = self.gridFJRgoodJobs(debug=debug);outputSize=0
-    for fjr in fjrs:
-      fjr = tools.frameworkJobReportParser(fjr)
-      outputSize += int(fjr.getFileSize())
-    print "estimated outputSize ",outputSize
-    if outputSize > 10000000000 and ( not hasattr(self,'mergeSizeNeglect') or not self.mergeSizeNeglect):
-      print "too big"
-      sys.exit(1)
+    if not hasattr(self,'mergeSizeNeglect') or not self.mergeSizeNeglect:
+      for fjr in fjrs:
+        fjr = tools.frameworkJobReportParser(fjr)
+        outputSize += int(fjr.getFileSize())
+      print "estimated outputSize ",outputSize
+      if outputSize > 10000000000:
+        print "too big"
+        sys.exit(1)
+    
     inputFileList = self.writeOutputFileList()
     import re
     baseOutputDir=where+'/'+self.postfix+'_'+self.timeSt+'/'
     if not os.path.exists(baseOutputDir):
       os.makedirs(baseOutputDir)
-    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',fjr.getFileLFN()).group(1)+'merged'
+    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',tools.frameworkJobReportParser(fjrs[0]).getFileLFN()).group(1)+'merged'
     # create merge cfg
     mergeTempCmd = os.getenv('CMSSW_BASE')+'/src/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts
     if debug:
@@ -256,7 +258,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       noParallel=self.mergeNoParallel if hasattr(self,'mergeNoParallel') else 3
       import CMSSWParallel.cmsswParallel as cmsParallel
       if dontExec:
-        cmd = "cd "+os.path.dirname(self.mergeCfg)+" && "+os.getenv('CMSSW_BASE')+'/ParallelizationTools/CMSSWParallel/cmsswParallel.py --numProcesses '+str(noParallel)+" --numJobs "+str(noJobs)+" --cfgFileName "+self.mergeCfg
+        cmd = "cd "+os.path.dirname(self.mergeCfg)+" && "+'$CMSSW_BASE'+'/ParallelizationTools/CMSSWParallel/cmsswParallel.py --numProcesses '+str(noParallel)+" --numJobs "+str(noJobs)+" --cfgFileName "+self.mergeCfg
         print cmd
         return cmd
       else:
