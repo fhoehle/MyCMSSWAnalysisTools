@@ -189,7 +189,11 @@ class crabProcess(crabDeamonTools.crabDeamon):
   def createMergeCfg(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
     if hasattr(self,'isMerged') and self.isMerged == True:
       return 0
+    if debug:
+      print "before getting good jobs"
     fjrs = self.gridFJRgoodJobs(debug=debug);outputSize=0
+    if debug:
+      print "getting good done"
     if not hasattr(self,'mergeSizeNeglect') or not self.mergeSizeNeglect:
       for fjr in fjrs:
         fjr = tools.frameworkJobReportParser(fjr)
@@ -212,11 +216,16 @@ class crabProcess(crabDeamonTools.crabDeamon):
     with open(baseOutputDir+'settings.txt','w') as settingFile:
       settingFile.write(mergeTempCmd)
     self.mergeCfg = baseOutputDir+'/copyPickMerge_cfg.py'
+    if debug:
+      print "before compile"
     createCfgCmd = 'ipython -c "exec(\\\"import IPython.ipapi\\nip = IPython.ipapi.get()\\nip.magic(\'run '+mergeTempCmd+'\')\\nf=open(\''+self.mergeCfg+'\',\'w\')\\nf.write(process.dumpPython())\\nf.close()\\\")"'
     if debug:
       print "createCfgCmd ",createCfgCmd
     createCfgJob = tools.coreTools.executeCommandSameEnv(createCfgCmd)
     createCfgJob.wait()
+    if debug:
+      print "after compile"
+
     if createCfgJob.returncode == 0:
       self.mergeCfgCreated = True
       self.outputFilename = outputFilename
@@ -232,7 +241,11 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return 0
     else:
       self.isMerged = False
+    if debug:
+      print "creating cfg"
     createMergeCfg = self.createMergeCfg(where=where,debug=debug,cmsswOpts=cmsswOpts)
+    if debug: 
+      print "creating cfg done"
     if not createMergeCfg == 0:
       return None
     if not parallel:
