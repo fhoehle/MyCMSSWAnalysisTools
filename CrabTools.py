@@ -8,7 +8,7 @@ crabCfg = {
     "jobtype":"cmssw"
     ,"scheduler" : "remoteGlidein" #sge
     #,"server_name" : "legnaro"
-    #,"submit_host": "cern_vocms20"
+    #,"submit_host": "cern_vocms20" #"cern_vocms83"
     ,"use_server" : 0
     }
   #,"SGE":{
