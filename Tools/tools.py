@@ -113,6 +113,10 @@ def getDatasetNameFromString(DatasetNameInString,debug=False):
   if debug:
     print " datasetName ",datasetName
   return datasetName
+def getStringFromDatasetName(datasetName):
+  return re.sub('/','__',datasetName.lstrip('/'))
+def getLabelFromDatasetName(datasetName):
+  return re.sub('/','_',datasetName.strip('/').rstrip('AOD')).rstrip('_')
 ########################
 class processSample(object):
   def __init__(self,cfgFileName,debug=False):
@@ -274,21 +278,24 @@ class bookKeeping():
   def __init__(self,debug=False):
     self.data = {}
     self.debug=debug
-  def bookKeep(self,processSample):
+  def bookKeep(self,processSample,runGrid=False):
     if not hasattr(processSample,"tmpCfgFileLoaded") or  not hasattr(processSample,"samp"):
       print "no bookKeeping, ",processSample
       return
     self.postfix = processSample.samp.postfix
     maxEvtsProcess = processSample.tmpCfgFileLoaded.process.maxEvents.input.value()
     maxInputEvts = 0
-    for inputF in processSample.tmpCfgFileLoaded.process.source.fileNames.value():
-      inputFileInfo = getFileMetaInformation(inputF,self.debug)
-      maxInputEvts +=inputFileInfo[0]["events"]
-      if maxEvtsProcess > 0 and maxEvtsProcess <= maxInputEvts:
-        break
-    self.data[self.postfix] = {"totalEvents":maxInputEvts}
-    if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
-      self.data[self.postfix]["totalEvents"] = maxEvtsProcess
+    if not runGrid:
+      for inputF in processSample.tmpCfgFileLoaded.process.source.fileNames.value():
+        inputFileInfo = getFileMetaInformation(inputF,self.debug)
+        maxInputEvts +=inputFileInfo[0]["events"]
+        if maxEvtsProcess > 0 and maxEvtsProcess <= maxInputEvts:
+          break
+      self.data[self.postfix] = {"totalEvents":maxInputEvts}
+      if maxEvtsProcess > 0 and maxEvtsProcess < maxInputEvts:
+        self.data[self.postfix]["totalEvents"] = maxEvtsProcess
+    else:
+      self.data[self.postfix]={"runGrid":runGrid}
     self.data[self.postfix]["cfg"] = processSample.newCfgName 
     self.data[self.postfix]["cfgLog"] = processSample.getLogFileName() 
     self.data[self.postfix]["outputFiles"] = processSample.getListOfOutputFiles()

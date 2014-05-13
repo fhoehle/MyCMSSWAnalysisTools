@@ -140,7 +140,7 @@ class cmsswAnalysis(object):
         sys.stdout.flush()
         if not ( self.dontExec and not self.runParallel):
           commandList.append(processSample.runSample(not self.runParallel))
-        self.bookKeeping.bookKeep(processSample)
+        self.bookKeeping.bookKeep(processSample,runGrid=self.runGrid)
       else:
         crabPs = []    
         sample = myTools.sample(sampDict["localFile"],sampDict["label"],sampDict["xSec"],postfix,int(self.options["maxEvents"]))
@@ -202,7 +202,7 @@ class cmsswAnalysis(object):
             sys.stdout.flush()
             processSample.setOutputFilesGrid()
             processSample.createNewCfg()
-            self.bookKeeping.bookKeep(processSample)
+            self.bookKeeping.bookKeep(processSample,runGrid=self.runGrid)
             sys.stdout.flush()
             sys.path.append(os.getenv('CMSSW_BASE')+os.path.sep+'MyCMSSWAnalysisTools')
             default_lumis_per_job = 5
@@ -232,7 +232,7 @@ class cmsswAnalysis(object):
           sys.stdout.flush()
           processSample.setOutputFilesGrid()
           processSample.createNewCfg()
-          self.bookKeeping.bookKeep(processSample)
+          self.bookKeeping.bookKeep(processSample,runGrid=self.runGrid)
           sys.stdout.flush()
           crabP = CrabTools.crabProcess(postfix,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir=self.args.gridOutputDir+os.path.sep+os.path.basename(os.path.normpath(self.outputDirectory)))
           crabP.setCrabDir(sample.postfix,self.timeStamp,outputLocation)

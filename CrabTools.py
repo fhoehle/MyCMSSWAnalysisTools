@@ -69,7 +69,6 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.workdir = workdir
     self.timeSt = timeSt 
     self.addGridDir = addGridDir
-    #print "self.addGridDir ",self.addGridDir," self.postfix ",self.postfix," self.timeSt ",self.timeSt 
     self.user_remote_dir = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") #+ self.postfix+"_"+self.timeSt
     self.__type__="crabProcess"
     self.crabJobDir = None
@@ -189,20 +188,26 @@ class crabProcess(crabDeamonTools.crabDeamon):
   def createMergeCfg(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
     if hasattr(self,'isMerged') and self.isMerged == True:
       return 0
+    if debug:
+      print "before getting good jobs"
     fjrs = self.gridFJRgoodJobs(debug=debug);outputSize=0
-    for fjr in fjrs:
-      fjr = tools.frameworkJobReportParser(fjr)
-      outputSize += int(fjr.getFileSize())
-    print "estimated outputSize ",outputSize
-    if outputSize > 10000000000 and ( not hasattr(self,'mergeSizeNeglect') or not self.mergeSizeNeglect):
-      print "too big"
-      sys.exit(1)
+    if debug:
+      print "getting good done"
+    if not hasattr(self,'mergeSizeNeglect') or not self.mergeSizeNeglect:
+      for fjr in fjrs:
+        fjr = tools.frameworkJobReportParser(fjr)
+        outputSize += int(fjr.getFileSize())
+      print "estimated outputSize ",outputSize
+      if outputSize > 10000000000:
+        print "too big"
+        sys.exit(1)
+    
     inputFileList = self.writeOutputFileList()
     import re
     baseOutputDir=where+'/'+self.postfix+'_'+self.timeSt+'/'
     if not os.path.exists(baseOutputDir):
       os.makedirs(baseOutputDir)
-    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',fjr.getFileLFN()).group(1)+self.timeSt+'_merged'
+    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',tools.frameworkJobReportParser(fjrs[0]).getFileLFN()).group(1)+'merged'
     # create merge cfg
     mergeTempCmd = os.getenv('CMSSW_BASE')+'/src/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts
     if debug:
@@ -210,11 +215,16 @@ class crabProcess(crabDeamonTools.crabDeamon):
     with open(baseOutputDir+'settings.txt','w') as settingFile:
       settingFile.write(mergeTempCmd)
     self.mergeCfg = baseOutputDir+'/copyPickMerge_cfg.py'
+    if debug:
+      print "before compile"
     createCfgCmd = 'ipython -c "exec(\\\"import IPython.ipapi\\nip = IPython.ipapi.get()\\nip.magic(\'run '+mergeTempCmd+'\')\\nf=open(\''+self.mergeCfg+'\',\'w\')\\nf.write(process.dumpPython())\\nf.close()\\\")"'
     if debug:
       print "createCfgCmd ",createCfgCmd
     createCfgJob = tools.coreTools.executeCommandSameEnv(createCfgCmd)
     createCfgJob.wait()
+    if debug:
+      print "after compile"
+
     if createCfgJob.returncode == 0:
       self.mergeCfgCreated = True
       self.outputFilename = outputFilename
@@ -223,20 +233,27 @@ class crabProcess(crabDeamonTools.crabDeamon):
       print "mergeCfg creation failed"
     return createCfgJob.returncode
    
-  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts=""):
+  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts="",dontExec=False):
     if hasattr(self,'isMerged') and self.isMerged:
       print self.postfix
       print "no merging needed, self.isMerged=True "
       return 0
     else:
       self.isMerged = False
+    if debug:
+      print "creating cfg"
     createMergeCfg = self.createMergeCfg(where=where,debug=debug,cmsswOpts=cmsswOpts)
+    if debug: 
+      print "creating cfg done"
     if not createMergeCfg == 0:
       return None
     if not parallel:
       mergeCmd='cmsRun '+self.mergeCfg+">& "+self.mergeCfg.strip()+"_log.txt "
       if debug:
         print "mergeCmd ",mergeCmd
+      if dontExec:
+        print mergeCmd
+        return mergeCmd
       mergeJob = tools.coreTools.executeCommandSameEnv(mergeCmd)
       mergeJob.wait()
       if mergeJob.returncode == 0:
@@ -247,16 +264,22 @@ class crabProcess(crabDeamonTools.crabDeamon):
       else:
         print "merging Failed"
         print mergeCmd
+        return 1
     else:
       noJobs=self.mergeNoJobs if hasattr(self,'mergeNoJobs') else 11
       noParallel=self.mergeNoParallel if hasattr(self,'mergeNoParallel') else 3
       import CMSSWParallel.cmsswParallel as cmsParallel
-      pR = cmsParallel.parallelRunner(self.mergeCfg,noParallel,noJobs,'',debug)
-      self.mergeCmds = pR.createCfgs()
-      t= pR.runParallel()
-      if t == 0:
-        self.isMerged=True
-      return t
+      if dontExec:
+        cmd = "cd "+os.path.dirname(self.mergeCfg)+" && "+'$CMSSW_BASE'+'/ParallelizationTools/CMSSWParallel/cmsswParallel.py --numProcesses '+str(noParallel)+" --numJobs "+str(noJobs)+" --cfgFileName "+self.mergeCfg
+        print cmd
+        return cmd
+      else:
+        pR = cmsParallel.parallelRunner(self.mergeCfg,noParallel,noJobs,'',debug)
+        self.mergeCmds = pR.createCfgs()
+        t= pR.runParallel()
+        if t == 0:
+          self.isMerged=True
+        return t
    
 def getCrabJobDatasetname(cJ,debug=False):
   gridFileList = cJ.gridOutputfileList()
@@ -296,6 +319,7 @@ def loadCrabJob(jsonFilename):
       cP = json.load(jsonFile,object_hook=objD)
     with open(jsonFilename , 'rb') as jsonFile:
       cP.__dict__ = json.load(jsonFile)
+    cP.loadedFromCrabJson = jsonFilename
     return cP
 def updateSubmitServer(newServer,dbFile,debug=False):
   import sqlite3 
