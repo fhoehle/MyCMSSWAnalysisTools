@@ -48,7 +48,7 @@ function getCMSGitPackage {
   subPkg=`echo $1 | sed 's/^[^\/]\+\/\([^\/]\+\)\/*$/\1/'`
   echo "subPkg "$subPkg
   if [ ! -d "$CMSSW_BASE/src/.git/info/sparse-checkout" ]; then
-    sparseSubPkg= ""
+    sparseSubPkg=""
     sparsePkg=""
   else
     sparseSubPkg=$(grep -F "$1" $CMSSW_BASE/src/.git/info/sparse-checkout || echo "")
