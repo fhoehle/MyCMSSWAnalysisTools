@@ -189,6 +189,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     outFileList.close()
     return outFileList.name
   def createMergeCfg(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
+    if not hasattr(self,"mergeGirdJobDict"):
+      self.mergeGirdJobDict = {}
     if hasattr(self,'isMerged') and self.isMerged == True:
       return 0
     if debug:
@@ -210,6 +212,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     baseOutputDir=where+'/'+self.postfix+'_'+self.timeSt+'/'
     if not os.path.exists(baseOutputDir):
       os.makedirs(baseOutputDir)
+    self.mergeGirdJobDict["mergeOutputDir"]=baseOutputDir
+    self.mergeGirdJobDict["postfix"]=self.postfix
     outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',tools.frameworkJobReportParser(fjrs[0]).getFileLFN()).group(1)+'merged'
     # create merge cfg
     mergeTempCmd = os.getenv('CMSSW_BASE')+'/src/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts
@@ -243,13 +247,21 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return 0
     else:
       self.isMerged = False
+    if not hasattr(self,'mergeGirdJobDict')
+      self.mergeGirdJobDict={}
     if debug:
       print "creating cfg"
     createMergeCfg = self.createMergeCfg(where=where,debug=debug,cmsswOpts=cmsswOpts)
+    self.mergeGirdJobDict["mergeCfg"]=self.mergeCfg
+    self.mergeGirdJobDict["postfix"]=self.postfix
     if debug: 
       print "creating cfg done"
     if not createMergeCfg == 0:
       return None
+    import json
+    with open (os.path.dirname(self.mergeCfg)+'/mergeJson_'+self.postfix+'_JSON.txt','w') as jsonMergeLog:
+      json.dump(jsonMergeLog,self.mergeGirdJobDict)
+      print "logging in ",jsonMergeLog.name
     if not parallel:
       mergeCmd='cmsRun '+self.mergeCfg+">& "+self.mergeCfg.strip()+"_log.txt "
       if debug:
