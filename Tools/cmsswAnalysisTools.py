@@ -31,6 +31,7 @@ class cmsswAnalysis(object):
     parser.add_argument('--runOnData',action='store_true',default=False,help=' activate running on data, will be transmitted to addOptions of cfg')
     parser.add_argument('--outputDirectory',default=os.getenv("PWD")+os.path.sep+'TMP',help='dircetory where output is stored with additional timeStamp')
     parser.add_argument('--useXRootDAccess',action='store_true',default=False,help=' if dcap door down use xrootd alternative access')
+    parser.add_argument('--useSGE',action='store_true',default=False,help=' use SGE system at NAF')
     args = parser.parse_known_args()
     args,notKnownArgs = args
     self.debug = args.debug
@@ -216,7 +217,13 @@ class cmsswAnalysis(object):
             for kD in keysToDelete:
                 if CrabTools.crabCfg["CMSSW"].has_key(kD):
                         del(CrabTools.crabCfg["CMSSW"][kD])
-            crabP.createCrabCfg(sampDict.get("crabConfig"))
+            if self.args.useSGE:
+              SGEdict={"SGE":{"resource" :" -V -l h_vmem=2G  -l site=hh","se_white_list": " dcache-se-cms.desy.de " },"CRAB":{"scheduler":"sge"}}
+              sampleDicCrab=sampDict.get("crabConfig") 
+              crabP.applyChanges(sampleDicCrab,SGEdict)
+              crabP.createCrabCfg(sampDict.get("crabConfig"))
+            else: 
+              crabP.createCrabCfg(sampDict.get("crabConfig"))
             print "lumi_mask",crabP.crabCfg["CMSSW"]["lumi_mask"]
             crabP.createCrabDir()
             crabP.writeCrabCfg()
@@ -244,7 +251,13 @@ class cmsswAnalysis(object):
                 sampDict["crabConfig"]["CMSSW"] = {"total_number_of_events":self.args.maxGridEvents}
             else:     
               sampDict["crabConfig"] = {"CMSSW":{"total_number_of_events":self.args.maxGridEvents}}
-          crabP.createCrabCfg(sampDict.get("crabConfig"))
+          if self.args.useSGE: 
+            SGEdict={"SGE":{"resource" :" -V -l h_vmem=2G  -l site=hh","se_white_list": " dcache-se-cms.desy.de " },"CRAB":{"scheduler":"sge"}}
+            sampleDicCrab=sampDict.get("crabConfig")
+            crabP.applyChanges(sampleDicCrab,SGEdict)
+            crabP.createCrabCfg(sampDict.get("crabConfig")) 
+          else: 
+            crabP.createCrabCfg(sampDict.get("crabConfig"))
           crabP.createCrabDir()
           crabP.writeCrabCfg()
           crabPs.append(crabP)

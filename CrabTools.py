@@ -75,7 +75,10 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.checkRequirements()
   def applyChanges(self,willBeChanged,changesGivenHere):
     for k,i in changesGivenHere.iteritems():
-      willBeChanged[k].update(i)
+      if not willBeChanged.has_key(k):
+        willBeChanged[k]=i
+      else:
+        willBeChanged[k].update(i)
   def checkRequirements(self):
     import sys,os
     if not checkGridCert():
