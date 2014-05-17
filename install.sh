@@ -47,8 +47,13 @@ function getCMSGitPackage {
   echo "pkg "$pkg
   subPkg=`echo $1 | sed 's/^[^\/]\+\/\([^\/]\+\)\/*$/\1/'`
   echo "subPkg "$subPkg
-  sparseSubPkg=$(grep -F "$1" $CMSSW_BASE/src/.git/info/sparse-checkout || echo "")
-  sparsePkg=$(grep -F "$pkg" $CMSSW_BASE/src/.git/info/sparse-checkout || echo "")
+  if [ ! -d "$CMSSW_BASE/src/.git/info/sparse-checkout" ]; then
+    sparseSubPkg=""
+    sparsePkg=""
+  else
+    sparseSubPkg=$(grep -F "$1" $CMSSW_BASE/src/.git/info/sparse-checkout || echo "")
+    sparsePkg=$(grep -F "$pkg" $CMSSW_BASE/src/.git/info/sparse-checkout || echo "")
+  fi
   if [ -d "$1" ] && [ "$sparseSubPkg" != "" ]; then
     echo "cms package already there $1"
   elif [ -d "$1" ] && [ "$sparseSubPkg" == "" ]; then
