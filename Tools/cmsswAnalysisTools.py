@@ -149,6 +149,11 @@ class cmsswAnalysis(object):
         if self.useXRootDAccess:
           sample.useXRootDLocation()
         import CrabTools
+        keysToDelete = ['total_number_of_events',"events_per_job"]
+        if sampDict.has_key("crabConfig") and sampDict.get("crabConfig").has_key("CMSSW") and ("total_number_of_lumis" in sampDict.get("crabConfig")["CMSSW"] or "lumis_per_job" in sampDict.get("crabConfig")["CMSSW"]):
+          for kD in keysToDelete:
+            if CrabTools.crabCfg["CMSSW"].has_key(kD):
+              del(CrabTools.crabCfg["CMSSW"][kD])
         if not hasattr (sample,"datasetName") or not sample.__dict__['datasetName']:
           sample.setDataset(postfix,debug=True)
         if self.args.runOnData:
@@ -212,10 +217,6 @@ class cmsswAnalysis(object):
               sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=default_lumis_per_job
             crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir=self.args.gridOutputDir+os.path.sep+os.path.basename(os.path.normpath(self.outputDirectory)))
             crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,outputLocation)
-	    keysToDelete = ['total_number_of_events',"number_of_jobs"]
-            for kD in keysToDelete:
-                if CrabTools.crabCfg["CMSSW"].has_key(kD):
-                        del(CrabTools.crabCfg["CMSSW"][kD])
             crabP.createCrabCfg(sampDict.get("crabConfig"))
             print "lumi_mask",crabP.crabCfg["CMSSW"]["lumi_mask"]
             crabP.createCrabDir()
