@@ -247,7 +247,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return 0
     else:
       self.isMerged = False
-    if not hasattr(self,'mergeGirdJobDict')
+    if not hasattr(self,'mergeGirdJobDict'):
       self.mergeGirdJobDict={}
     if debug:
       print "creating cfg"

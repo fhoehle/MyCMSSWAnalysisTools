@@ -213,10 +213,6 @@ class cmsswAnalysis(object):
               sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=default_lumis_per_job
             crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir=self.args.gridOutputDir+os.path.sep+os.path.basename(os.path.normpath(self.outputDirectory)))
             crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,outputLocation)
-	    keysToDelete = ['total_number_of_events',"number_of_jobs"]
-            for kD in keysToDelete:
-                if CrabTools.crabCfg["CMSSW"].has_key(kD):
-                        del(CrabTools.crabCfg["CMSSW"][kD])
             if self.args.useSGE:
               SGEdict={"SGE":{"resource" :" -V -l h_vmem=2G  -l site=hh","se_white_list": " dcache-se-cms.desy.de " },"CRAB":{"scheduler":"sge"}}
               sampleDicCrab=sampDict.get("crabConfig") 
@@ -226,6 +222,11 @@ class cmsswAnalysis(object):
               crabP.createCrabCfg(sampDict.get("crabConfig"))
             print "lumi_mask",crabP.crabCfg["CMSSW"]["lumi_mask"]
             crabP.createCrabDir()
+            keysToDelete = ['total_number_of_events',"number_of_jobs","events_per_job"]
+            for kD in keysToDelete:
+                if crabP.crabCfg["CMSSW"].has_key(kD):
+                        del(crabP.crabCfg["CMSSW"][kD])
+            print "test ",crabP.crabCfg
             crabP.writeCrabCfg()
             crabPs.append(crabP)
  
