@@ -232,6 +232,8 @@ class cmsswAnalysis(object):
                 if crabP.crabCfg["CMSSW"].has_key(kD):
                         del(crabP.crabCfg["CMSSW"][kD])
             print "test ",crabP.crabCfg
+            if crabP.crabCfg.has_key("USER") and crabP.crabCfg.get("USER").has_key('publish_data_name') and not crabP.timeSt in crabP.crabCfg["USER"]['publish_data_name']:
+               crabP.crabCfg["USER"]['publish_data_name'] += ('_' if crabP.crabCfg["USER"]['publish_data_name'].endswith('_') else '' ) + crabP.timeSt
             crabP.writeCrabCfg()
             crabPs.append(crabP)
  
@@ -265,6 +267,8 @@ class cmsswAnalysis(object):
           else: 
             crabP.createCrabCfg(sampDict.get("crabConfig"))
           crabP.createCrabDir()
+          if crabP.crabCfg.has_key("USER") and crabP.crabCfg.get("USER").has_key('publish_data_name') and not crabP.timeSt in crabP.crabCfg["USER"]['publish_data_name']:
+            crabP.crabCfg["USER"]['publish_data_name'] += ('_' if not crabP.crabCfg["USER"]['publish_data_name'].endswith('_') else '' ) + crabP.timeSt
           crabP.writeCrabCfg()
           crabPs.append(crabP)
         print "number of crabs ",len(crabPs)
