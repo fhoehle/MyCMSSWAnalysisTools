@@ -101,10 +101,11 @@ class crabProcess(crabDeamonTools.crabDeamon):
     return cCfg.name 
   ###
   def setCrabDir(self,addCrabDir ="",timeSt = "",workdir = ""):
-    if workdir == "":
-      workdir =  self.workdir
+    if not workdir == "":
+       self.workdir = workdir
     import os
-    crabDir = os.path.realpath(workdir)+((os.path.sep+addCrabDir) if addCrabDir != "" else "")+(("_"+timeSt) if timeSt != "" else "")
+    crabDir = os.path.realpath(self.workdir)+((os.path.sep+addCrabDir) if addCrabDir != "" else "")+(("_"+timeSt) if timeSt != "" else "")
+    self.crabJsonFile = self.workdir+"/"+self.postfix+"_"+self.timeStamp+"_CrabCfg.json"
     #if self.debug:
     print "crabDir ",crabDir
     self.crabDir = crabDir + os.path.sep if not crabDir.endswith('/') else "" 
@@ -132,8 +133,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     import re
     import Tools.lumiTools as lumiTools
     self.executeCrabCommand("-report",debug = True) 
-    intL=lumiTools.calcLumi(self.crabJobDir+"/res/lumiSummary.json")
-    return intL 
+    self.intLuminosity=lumiTools.calcLumi(self.crabJobDir+"/res/lumiSummary.json")
+    return self.intLuminosity
   def changeCrabJobDir(self,newDir):
     self.crabJobDir = newDir
   def executeCrabCommand(self,command,debug = False,returnOutput = False):
@@ -189,8 +190,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     outFileList.close()
     return outFileList.name
   def createMergeCfg(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
-    if not hasattr(self,"mergeGirdJobDict"):
-      self.mergeGirdJobDict = {}
+    #if not hasattr(self,"mergeGirdJobDict"):
+    #  self.mergeGirdJobDict = {}
     if hasattr(self,'isMerged') and self.isMerged == True:
       return 0
     if debug:
@@ -212,8 +213,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     baseOutputDir=where+'/'+self.postfix+'_'+self.timeSt+'/'
     if not os.path.exists(baseOutputDir):
       os.makedirs(baseOutputDir)
-    self.mergeGirdJobDict["mergeOutputDir"]=baseOutputDir
-    self.mergeGirdJobDict["postfix"]=self.postfix
+    #self.mergeGirdJobDict["mergeOutputDir"]=baseOutputDir
+    #self.mergeGirdJobDict["postfix"]=self.postfix
     outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',tools.frameworkJobReportParser(fjrs[0]).getFileLFN()).group(1)+'merged'
     # create merge cfg
     mergeTempCmd = os.getenv('CMSSW_BASE')+'/src/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts
@@ -249,18 +250,21 @@ class crabProcess(crabDeamonTools.crabDeamon):
       self.isMerged = False
     if not hasattr(self,'mergeGirdJobDict'):
       self.mergeGirdJobDict={}
+      self.mergeGirdJobDict["postfix"]=self.postfix
     if debug:
       print "creating cfg"
     createMergeCfg = self.createMergeCfg(where=where,debug=debug,cmsswOpts=cmsswOpts)
     self.mergeGirdJobDict["mergeCfg"]=self.mergeCfg
     self.mergeGirdJobDict["postfix"]=self.postfix
+    self.mergeGirdJobDict["mergeOutputDir"]=os.path.dirname(self.mergeGirdJobDict["mergeCfg"])
     if debug: 
       print "creating cfg done"
     if not createMergeCfg == 0:
       return None
     import json
-    with open (os.path.dirname(self.mergeCfg)+'/mergeJson_'+self.postfix+'_JSON.txt','w') as jsonMergeLog:
-      json.dump(jsonMergeLog,self.mergeGirdJobDict)
+    with open (os.path.dirname(self.mergeCfg)+'/mergeJson_'+self.postfix+'_'+self.timeSt+'_JSON.txt','w') as jsonMergeLog:
+      tmpDict = dict(self.mergeGirdJobDict.items() + {'crabJobJSON': (self.loadedFromCrabJson if hasattr(self,'loadedFromCrabJson') else (self.crabJsonFile if hasattr(self,'crabJsonFile') else 'not existing') ) }.items() )
+      json.dump(tmpDict,jsonMergeLog,indent=2)
       print "logging in ",jsonMergeLog.name
     if not parallel:
       mergeCmd='cmsRun '+self.mergeCfg+">& "+self.mergeCfg.strip()+"_log.txt "
@@ -317,12 +321,13 @@ def commandAcGridFolder(command,gridFolder):
 def removeGridFolderCrab(cJ):
   commandAcGridFolder("rm ",cJ.getAcGridDir().rstrip("/")+"/*")
   commandAcGridFolder("rmdir ",cJ.getAcGridDir().rstrip("/"))
-def saveCrabProp(crabP,jsonFilename):
+def saveCrabProp(crabP):
+    jsonFilename = crabP.crabJsonFile
     print "saving crab configuration: ",jsonFilename
     import json
     #self.jsonFilename = jsonFilename
     with open (jsonFilename,'wb') as f:
-      json.dump(crabP.__dict__,f)
+      json.dump(crabP.__dict__,f,indent=2)
 def loadCrabJob(jsonFilename):
     import json
     def objD(obj):
