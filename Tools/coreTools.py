@@ -1,6 +1,33 @@
-def executeCommandSameEnv(command):
-  import os,subprocess
-  return subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=subprocess.PIPE,env=os.environ)
+import string
+import random
+import subprocess
+def idGenerator(size=6, chars=string.ascii_letters + string.digits):
+  return ''.join(random.choice(chars) for _ in range(size))
+def executeCommandSameEnv(command,stdout=subprocess.PIPE):
+  import os
+  return subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=stdout,env=os.environ)
+def executeCommandSameEnvBkpReturnCode(command,debug=False,stdoutTMP=None):
+    stopKey = 'executeCommandSameEnvBkpReturnCode stopKey '+idGenerator()
+    command = command+' ;echo "returnCode: "$?"!"; echo "'+stopKey+'"'
+    if debug:
+      print "executing command ",command
+    subPrOutput = executeCommandSameEnv(command,stdout=(open(stdoutTMP,'w') if stdoutTMP else subprocess.PIPE ))
+    subPStdOut = [];exitCode=None
+    if debug:
+      print "waiting for ",command
+    if stdoutTMP:
+      subPrOutput.wait()
+    for i,line in enumerate(iter((open(stdoutTMP).readline if stdoutTMP else subPrOutput.stdout.readline),stopKey+'\n')):
+      if 'returnCode' in line:
+        exitCode=line
+      if debug:
+        print line,
+      if not stdoutTMP:
+        subPStdOut.append(line)
+    if not stdoutTMP:
+      subPrOutput.stdout.close()
+    return subPStdOut,exitCode
+###############
 def checkCommandAbortIfFail(p):
   import sys
   p.wait()
