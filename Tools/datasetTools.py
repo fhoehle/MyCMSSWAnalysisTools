@@ -37,7 +37,7 @@ class createDatasampleFile(object):
         sys.argv = oldSsArgv
       else:
         dsLumiList = LumiList(compactList=json.load(open(d['json'])))
-      dsRuns = dsLumiList.compactList.keys()
+      dsRuns = dsLumiList.getRuns()
       self.dataDatasets[d['label']] = ('{ \n '
         '\t"xSec":None\n'
         '\t,"localFile":None\n'
