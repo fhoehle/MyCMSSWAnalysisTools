@@ -105,7 +105,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
        self.workdir = workdir
     import os
     crabDir = os.path.realpath(self.workdir)+((os.path.sep+addCrabDir) if addCrabDir != "" else "")+(("_"+timeSt) if timeSt != "" else "")
-    self.crabJsonFile = self.workdir+"/"+self.postfix+"_"+self.timeStamp+"_CrabCfg.json"
+    self.crabJsonFile = self.workdir+"/"+self.postfix+"_"+self.timeSt+"_CrabCfg.json"
     #if self.debug:
     print "crabDir ",crabDir
     self.crabDir = crabDir + os.path.sep if not crabDir.endswith('/') else "" 
