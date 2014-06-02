@@ -274,12 +274,11 @@ class cmsswAnalysis(object):
         print "number of crabs ",len(crabPs)
         for crabP in crabPs:
           crabP.create()#executeCrabCommand("-create",debug = True) 
-          crabJsonFile = outputLocation+"/"+crabP.postfix+"_"+self.timeStamp+"_CrabCfg.json"
-          CrabTools.saveCrabProp(crabP,crabJsonFile)
+          CrabTools.saveCrabProp(crabP)
           if not dontExecCrab:
               crabP.submit()
               crabP.executeCrabCommand("-status")
-          self.bookKeeping.addCrab(crabJsonFile)
+          self.bookKeeping.addCrab(crabP.crabJsonFile)
     #processSample.end()
     dontExecParallel = self.dontExec
     if self.runParallel and len(commandList) > 0:
