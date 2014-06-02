@@ -1,4 +1,4 @@
-import os,sys
+import os,sys,copy
 sys.path.append(os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/MyDASTools/DASclient/python')
 import das_client
 ##
@@ -8,6 +8,10 @@ def myDasClient(debug=False):
   return dC
 class theDasClient:
   def __init__(self,debug=False):
+    oldArgv = None
+    if len(sys.argv) > 1:
+      oldArgv = copy.deepcopy(sys.argv[1:])
+      del sys.argv[1:]
     self.optmgr = das_client.DASOptionParser()
     self.opts, _ = self.optmgr.get_opt()
     self.host = self.opts.host
@@ -21,6 +25,8 @@ class theDasClient:
     self.das_h = self.opts.das_headers
     self.base = self.opts.base
     self.debug=debug
+    if oldArgv:
+      sys.argv.extend(oldArgv)
   def getDataSetNameForFile(self,filename, addQuery = 'prod/global'):
     if self.debug:
       print "searching dataset for file ",filename
