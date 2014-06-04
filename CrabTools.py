@@ -210,7 +210,9 @@ class crabProcess(crabDeamonTools.crabDeamon):
     
     inputFileList = self.writeOutputFileList()
     import re
-    baseOutputDir=where+'/'+self.postfix+'_'+self.timeSt+'/'
+    if not hasattr(self,"mergeId"):
+      self.mergeId = tools.coreTools.idGenerator()
+    baseOutputDir=where+'/'+self.postfix+'_'+self.timeSt+'_'+self.mergeId+'/'
     if not os.path.exists(baseOutputDir):
       os.makedirs(baseOutputDir)
     #self.mergeGirdJobDict["mergeOutputDir"]=baseOutputDir
@@ -248,6 +250,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return 0
     else:
       self.isMerged = False
+    #self.reportLumi() 
     if not hasattr(self,'mergeGirdJobDict'):
       self.mergeGirdJobDict={}
       self.mergeGirdJobDict["postfix"]=self.postfix
@@ -262,28 +265,34 @@ class crabProcess(crabDeamonTools.crabDeamon):
     if not createMergeCfg == 0:
       return None
     import json
-    with open (os.path.dirname(self.mergeCfg)+'/mergeJson_'+self.postfix+'_'+self.timeSt+'_JSON.txt','w') as jsonMergeLog:
-      tmpDict = dict(self.mergeGirdJobDict.items() + {'crabJobJSON': (self.loadedFromCrabJson if hasattr(self,'loadedFromCrabJson') else (self.crabJsonFile if hasattr(self,'crabJsonFile') else 'not existing') ) }.items() )
-      json.dump(tmpDict,jsonMergeLog,indent=2)
-      print "logging in ",jsonMergeLog.name
+    tmpReturnVal = None
+    self.mergeCrabLogJson = os.path.dirname(self.mergeCfg)+'/mergeJson_'+self.postfix+'_'+self.timeSt+'_JSON.txt'
+    tmpDict = dict(self.mergeGirdJobDict.items() + {'crabJobJSON': (self.loadedFromCrabJson if hasattr(self,'loadedFromCrabJson') else (self.crabJsonFile if hasattr(self,'crabJsonFile') else 'not existing') ) }.items() )
+    if hasattr(self,'loadedFromCrabJson') or hasattr(self,'crabJsonFile'):
+      from shutil import copy2       
+      if hasattr(self,'loadedFromCrabJson') and hasattr(self,'crabJsonFile'):
+        print "both are given: loadedFromCrabJson ",self.loadedFromCrabJson," and crabJsonFile ",self.crabJsonFile
+        copy2( self.crabJsonFile,os.path.dirname(self.mergeCfg))
+      copy2( self.loadedFromCrabJson if hasattr(self,'loadedFromCrabJson') else self.crabJsonFile , os.path.dirname(self.mergeCfg) ) 
+    print "logging in ",self.mergeCrabLogJson
     if not parallel:
       mergeCmd='cmsRun '+self.mergeCfg+">& "+self.mergeCfg.strip()+"_log.txt "
       if debug:
         print "mergeCmd ",mergeCmd
       if dontExec:
         print mergeCmd
-        return mergeCmd
+        tmpReturnVal = mergeCmd
       mergeJob = tools.coreTools.executeCommandSameEnv(mergeCmd)
       mergeJob.wait()
       if mergeJob.returncode == 0:
         self.isMerged=True
         outputFilename = self.outputFilename+".root"
         self.mergedFilename = outputFilename
-        return outputFilename
+        tmpReturnVal =  outputFilename
       else:
         print "merging Failed"
         print mergeCmd
-        return 1
+        tmpReturnVal =  1
     else:
       noJobs=self.mergeNoJobs if hasattr(self,'mergeNoJobs') else 11
       noParallel=self.mergeNoParallel if hasattr(self,'mergeNoParallel') else 3
@@ -291,15 +300,19 @@ class crabProcess(crabDeamonTools.crabDeamon):
       if dontExec:
         cmd = "cd "+os.path.dirname(self.mergeCfg)+" && "+'$CMSSW_BASE'+'/ParallelizationTools/CMSSWParallel/cmsswParallel.py --numProcesses '+str(noParallel)+" --numJobs "+str(noJobs)+" --cfgFileName "+self.mergeCfg
         print cmd
-        return cmd
+        tmpReturnVal= cmd
       else:
         pR = cmsParallel.parallelRunner(self.mergeCfg,noParallel,noJobs,'',debug)
         self.mergeCmds = pR.createCfgs()
         t= pR.runParallel()
-        if t == 0:
+        if t.strip() == "0":
           self.isMerged=True
-        return t
-   
+        tmpReturnVal =  t
+        tmpDict['parallelMerge']=pR.jsonLogFileName
+    with open (self.mergeCrabLogJson,'w') as jsonMergeLog:
+      json.dump(tmpDict,jsonMergeLog,indent=2)
+    return tmpReturnVal
+  
 def getCrabJobDatasetname(cJ,debug=False):
   gridFileList = cJ.gridOutputfileList()
   if not isinstance(gridFileList,list) or len(gridFileList) == 0:
@@ -321,8 +334,8 @@ def commandAcGridFolder(command,gridFolder):
 def removeGridFolderCrab(cJ):
   commandAcGridFolder("rm ",cJ.getAcGridDir().rstrip("/")+"/*")
   commandAcGridFolder("rmdir ",cJ.getAcGridDir().rstrip("/"))
-def saveCrabProp(crabP):
-    jsonFilename = crabP.crabJsonFile
+def saveCrabProp(crabP,alternativeJSONname=None):
+    jsonFilename = crabP.crabJsonFile if not alternativeJSONname else alternativeJSONname
     print "saving crab configuration: ",jsonFilename
     import json
     #self.jsonFilename = jsonFilename
@@ -413,3 +426,56 @@ def overview(detailedInfo=False, timePoint = None):
     else:
       notFinished.append(m)
   return {'notFinished':notFinished,"finished":finished}
+#####################
+class crabNanny(object):
+  def __init__(self,cJs,mergeOutput):
+    self.cJs = cJs
+    self.mergeOutput=mergeOutput
+    self.crabJobTMPstdout=None
+    self.mergeNoParallel = 4;self.mergeSizeNeglect = True
+    if  self.mergeOutput and not os.path.exists(self.mergeOutput):
+      os.makedirs( self.mergeOutput) 
+  def startNursing(self,waitingTime=600):
+    self.retrievedJobs = []
+    self.allMerged = []
+    dontStop = True
+    jobList = self.cJs
+    
+    while dontStop:
+      for i,c in enumerate(jobList):
+        if not hasattr(c,'stdoutTMPfile'):
+          if not self.crabJobTMPstdout:
+            c.setTMPstdoutFile(c.crabJsonFile+'_TMDstdout')
+          else:
+            c.setTMPstdoutFile(self.crabJobTMPstdout+('/' if not self.crabJobTMPstdout.endswith('/') else '' )+os.path.basename(t.crabJsonFile))
+        if not hasattr(c,'allRetrieved') or not c.allRetrieved: 
+          print "autoResubmitting ",c.postfix
+          c.automaticResubmit(onlySummary=True) 
+        else:        
+          if hasattr(c,'isMerged') and c.isMerged:
+            if hasattr(c,'nursingDone') and c.nursingDone:
+              continue
+            self.allMerged.append(c)
+            c.reportLumi()
+            jsonCrab = c.crabJsonFile
+            mergeDonePostfix = "mergeDONE"
+            import glob
+            mergedMatches = glob.glob(os.path.splitext(jsonCrab)[0]+"_"+mergeDonePostfix+"*")
+            if len(mergedMatches ) > 0 :
+              print "older Versions already merged ",mergedMatches
+            doneJsonCrab = tools.coreTools.addPostFixToFilename(jsonCrab, mergeDonePostfix+"_"+c.mergeId)
+            saveCrabProp(c,alternativeJSONname=doneJsonCrab)
+            c.nursingDone = True 
+          else:
+            if not os.path.exists(self.mergeOutput):
+              print "merging not possible, target location does not exist"
+            else:
+              print "merging ",c.postfix
+              c.mergeNoParallel = self.mergeNoParallel; c.mergeSizeNeglect = self.mergeSizeNeglect; c.doMerging(debug=True,where= self.mergeOutput,parallel=True)
+      if len(self.cJs) == len (self.allMerged):
+        dontStop = False
+      else:
+        print "waiting for ",waitingTime," seconds"
+        import time
+        time.sleep(waitingTime)
+    print " allDone "
