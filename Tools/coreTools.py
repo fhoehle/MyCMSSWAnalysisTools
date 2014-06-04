@@ -1,11 +1,18 @@
 import string
 import random
 import subprocess
+def addPostFixToFilename(name,postfix):
+  from os import path
+  splittedName = path.splitext(name)
+  return splittedName[0] + (("_"+postfix) if postfix != "" else "") + splittedName[1]
+####################################
 def idGenerator(size=6, chars=string.ascii_letters + string.digits):
   return ''.join(random.choice(chars) for _ in range(size))
+##############################
 def executeCommandSameEnv(command,stdout=subprocess.PIPE):
   import os
   return subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=stdout,env=os.environ)
+#####################################
 def executeCommandSameEnvBkpReturnCode(command,debug=False,stdoutTMP=None):
     stopKey = 'executeCommandSameEnvBkpReturnCode stopKey '+idGenerator()
     command = command+' ;echo "returnCode: "$?"!"; echo "'+stopKey+'"'

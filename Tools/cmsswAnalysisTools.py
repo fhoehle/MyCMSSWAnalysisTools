@@ -190,7 +190,7 @@ class cmsswAnalysis(object):
             if self.debug:
               print "len(shortJSON) ",len(shortJSON)
             if len(shortJSON):             
-              shortJSONfilename = myTools.addPostFixToFilename (JSONfilename,'_'+postfix+'_part_'+str(len(shortendJSONs)))
+              shortJSONfilename = coreTools.addPostFixToFilename (JSONfilename,'_'+postfix+'_part_'+str(len(shortendJSONs)))
               if self.debug:
                 print "shortJSONfilename ",shortJSONfilename
 	      setattr(shortJSON,'JSONfileName',shortJSONfilename);setattr(shortJSON,'label','_part_'+str(len(shortendJSONs)))

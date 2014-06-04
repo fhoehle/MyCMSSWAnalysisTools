@@ -42,7 +42,7 @@ if len(analysisFiles.values()) > 0:
     myHadd.mergedHadd(target,analysisFiles.values(), debug = args.debug)
     print "done" 
   dataset["outputFilesCrab"]=[target]
-bookKeepingFileName = tools.addPostFixToFilename(args.bookKeeping,'_bookKeepingUpdated_'+coreTools.getTimeStamp())
+bookKeepingFileName = coreTools.addPostFixToFilename(args.bookKeeping,'_bookKeepingUpdated_'+coreTools.getTimeStamp())
 updatedbookKeeping = open(bookKeepingFileName ,'wb')
 json.dump(data,updatedbookKeeping);updatedbookKeeping.close()
 print "new bookKeeping created ",bookKeepingFileName

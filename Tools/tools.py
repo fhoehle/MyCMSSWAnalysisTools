@@ -5,10 +5,6 @@ ROOT.TH1.AddDirectory(False)
 sys.path.extend([os.getenv('HOME')+'/PyRoot_Helpers/PyRoot_Functions',os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/Tools'])
 import coreTools
 import MyHistFunctions_cfi as MyHistFunctions
-def addPostFixToFilename(name,postfix):
-  from os import path
-  splittedName = path.splitext(name)
-  return splittedName[0] + (("_"+postfix) if postfix != "" else "") + splittedName[1]
 #########################
 class analysisSample (object):
   def __init__(self,lumiForPlots):
@@ -137,7 +133,7 @@ class processSample(object):
       return 
     cfgFileLoaded = self.loadInputCfg()
     from os import path
-    tmpCfgName = addPostFixToFilename(self.cfgFileName,'_compiledInputCfg_TMP')
+    tmpCfgName = coreTools.addPostFixToFilename(self.cfgFileName,'_compiledInputCfg_TMP')
     tmpCfg = open(tmpCfgName , 'w')
     tmpCfg.write(cfgFileLoaded.process.dumpPython())
     tmpCfg.close()
@@ -190,16 +186,16 @@ class processSample(object):
     cfgOutputFolderFWK = 'file:'+path.realpath(self.cfgOutputFolder)
     #adapt output
     for outItem in self.tmpCfgFileLoaded.process.outputModules.values():
-        outItem.fileName.setValue(cfgOutputFolderFWK+path.sep+path.split(addPostFixToFilename(outItem.fileName.value(),self.samp.postfix))[1])
+        outItem.fileName.setValue(cfgOutputFolderFWK+path.sep+path.split(coreTools.addPostFixToFilename(outItem.fileName.value(),self.samp.postfix))[1])
     # TFileService
     if hasattr(self.tmpCfgFileLoaded.process,"TFileService"):
-      self.tmpCfgFileLoaded.process.TFileService.fileName.setValue(cfgOutputFolderFWK+path.sep+path.split(addPostFixToFilename(self.tmpCfgFileLoaded.process.TFileService.fileName.value(),self.samp.postfix))[1])
+      self.tmpCfgFileLoaded.process.TFileService.fileName.setValue(cfgOutputFolderFWK+path.sep+path.split(coreTools.addPostFixToFilename(self.tmpCfgFileLoaded.process.TFileService.fileName.value(),self.samp.postfix))[1])
     # MessageLogger
     if hasattr(self.tmpCfgFileLoaded.process,"MessageLogger"):
       for dest in self.tmpCfgFileLoaded.process.MessageLogger.destinations:
         if hasattr(self.tmpCfgFileLoaded.process.MessageLogger,dest):
           if hasattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename'): 
-            getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').setValue(cfgOutputFolderFWK+path.sep+path.split(addPostFixToFilename(getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').value(),self.samp.postfix))[1])    
+            getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').setValue(cfgOutputFolderFWK+path.sep+path.split(coreTools.addPostFixToFilename(getattr(getattr(self.tmpCfgFileLoaded.process.MessageLogger,dest),'filename').value(),self.samp.postfix))[1])    
   def createNewCfgFileName(self,otherLoc = ''):
     from os import path
     loc = self.workLoc
@@ -214,7 +210,7 @@ class processSample(object):
     if not hasattr(self,'samp'):
       print "No changes were applied!!! "
       return
-    newCfgFileName= addPostFixToFilename(self.cfgFileName , "_changesApplied")
+    newCfgFileName= coreTools.addPostFixToFilename(self.cfgFileName , "_changesApplied")
     newCfgFileName = loc + path.split(newCfgFileName)[1] 
     self.newCfgName = newCfgFileName
     if self.debug:
