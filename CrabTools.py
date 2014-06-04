@@ -307,6 +307,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
         t= pR.runParallel()
         if t.strip() == "0":
           self.isMerged=True
+          tmpDict['intLumi']=self.reportLumi()
         tmpReturnVal =  t
         tmpDict['parallelMerge']=pR.jsonLogFileName
     with open (self.mergeCrabLogJson,'w') as jsonMergeLog:
@@ -456,7 +457,6 @@ class crabNanny(object):
             if hasattr(c,'nursingDone') and c.nursingDone:
               continue
             self.allMerged.append(c)
-            c.reportLumi()
             jsonCrab = c.crabJsonFile
             mergeDonePostfix = "mergeDONE"
             import glob
