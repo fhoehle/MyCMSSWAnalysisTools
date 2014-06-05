@@ -3,6 +3,7 @@ import sys,os
 sys.path.extend([ os.getenv('CMSSW_BASE')+os.path.sep+p for p in ['MyCrabTools','MyCMSSWAnalysisTools','ParallelizationTools']])
 import crabDeamonTools
 import Tools.tools as tools
+import Tools.alternativeLocation as alternativeLocation
 crabCfg = {
   "CRAB" :{
     "jobtype":"cmssw"
@@ -180,16 +181,16 @@ class crabProcess(crabDeamonTools.crabDeamon):
       jobRep = tools.frameworkJobReportParser(fjr) 
       outputFileList.append(jobRep.getFileLFN())
     return outputFileList
-  def writeOutputFileList(self):
+  def writeOutputFileList(self,prefix=""):
     if not self.crabDir:
       print "no crabDir set"
       return None
     outFileList = open(self.crabDir+'/'+self.postfix+'_gridOutputFiles.txt','w')
     for f in self.gridOutputfileList():
-      outFileList.write(f+'\n')
+      outFileList.write(prefix+f+'\n')
     outFileList.close()
     return outFileList.name
-  def createMergeCfg(self,where=os.getenv('PWD'),debug=False,cmsswOpts=""):
+  def createMergeCfg(self,where=os.getenv('PWD'),debug=False,cmsswOpts="",useXRootD=False):
     #if not hasattr(self,"mergeGirdJobDict"):
     #  self.mergeGirdJobDict = {}
     if hasattr(self,'isMerged') and self.isMerged == True:
@@ -207,8 +208,13 @@ class crabProcess(crabDeamonTools.crabDeamon):
       if outputSize > 10000000000:
         print "too big"
         sys.exit(1)
-    
-    inputFileList = self.writeOutputFileList()
+    inputFileList = None
+    if useXRootD:
+      xrdHelper = alternativeLocation.xRootDPathCreator()
+      xrdHelper.findXRootDPrefix()
+      inputFileList = self.writeOutputFileList(prefix=xrdHelper.xRootDPrefix)
+    else:
+      inputFileList = self.writeOutputFileList()
     import re
     if not hasattr(self,"mergeId"):
       self.mergeId = tools.coreTools.idGenerator()
@@ -243,7 +249,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       print "mergeCfg creation failed"
     return createCfgJob.returncode
    
-  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts="",dontExec=False):
+  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts="",dontExec=False,useXRootD=False):
     if hasattr(self,'isMerged') and self.isMerged:
       print self.postfix
       print "no merging needed, self.isMerged=True "
@@ -256,7 +262,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       self.mergeGirdJobDict["postfix"]=self.postfix
     if debug:
       print "creating cfg"
-    createMergeCfg = self.createMergeCfg(where=where,debug=debug,cmsswOpts=cmsswOpts)
+    createMergeCfg = self.createMergeCfg(where=where,debug=debug,cmsswOpts=cmsswOpts,useXRootD=useXRootD)
     self.mergeGirdJobDict["mergeCfg"]=self.mergeCfg
     self.mergeGirdJobDict["postfix"]=self.postfix
     self.mergeGirdJobDict["mergeOutputDir"]=os.path.dirname(self.mergeGirdJobDict["mergeCfg"])
@@ -434,6 +440,7 @@ class crabNanny(object):
     self.mergeOutput=mergeOutput
     self.crabJobTMPstdout=None
     self.mergeNoParallel = 4;self.mergeSizeNeglect = True
+    self.useXRootD = False
     if  self.mergeOutput and not os.path.exists(self.mergeOutput):
       os.makedirs( self.mergeOutput) 
   def startNursing(self,waitingTime=600):
@@ -471,7 +478,7 @@ class crabNanny(object):
               print "merging not possible, target location does not exist"
             else:
               print "merging ",c.postfix
-              c.mergeNoParallel = self.mergeNoParallel; c.mergeSizeNeglect = self.mergeSizeNeglect; c.doMerging(debug=True,where= self.mergeOutput,parallel=True)
+              c.mergeNoParallel = self.mergeNoParallel; c.mergeSizeNeglect = self.mergeSizeNeglect; c.doMerging(debug=True,where= self.mergeOutput,parallel=True,useXRootD=self.useXRootD)
       if len(self.cJs) == len (self.allMerged):
         dontStop = False
       else:
