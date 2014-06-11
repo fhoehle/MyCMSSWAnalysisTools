@@ -216,7 +216,7 @@ class cmsswAnalysis(object):
             if not sampDict["crabConfig"]["CMSSW"].has_key("lumis_per_job"):
               print "lumis_per_job given therefore used default ",default_lumis_per_job
               sampDict["crabConfig"]["CMSSW"]["lumis_per_job"]=default_lumis_per_job
-            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir=self.args.gridOutputDir+os.path.sep+os.path.basename(os.path.normpath(self.outputDirectory)))
+            crabP = CrabTools.crabProcess(postfix+shJ.label,processSample.newCfgName,sample.datasetName,outputLocation,self.timeStamp,addGridDir=self.args.gridOutputDir+os.path.sep+os.path.basename(os.path.normpath(self.outputDirectory)).rstrip('_')+os.path.sep+postfix+shJ.label+"_"+self.timeStamp)
             crabP.setCrabDir(sample.postfix+shJ.label,self.timeStamp,outputLocation)
             if self.args.useSGE:
               SGEdict={"SGE":{"resource" :" -V -l h_vmem=2G  -l site=hh","se_white_list": " dcache-se-cms.desy.de " },"CRAB":{"scheduler":"sge"}}

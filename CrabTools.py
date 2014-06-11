@@ -117,6 +117,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       os.makedirs(self.crabDir)
   ##
   def createCrabCfg(self,changes = None):
+    import copy
     tmpCrabCfg = crabCfg
     tmpCrabCfg["CMSSW"]["pset"]=self.cfg
     tmpCrabCfg["USER"]["user_remote_dir"] = self.user_remote_dir
@@ -125,7 +126,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
     tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp
     if changes != None:
       self.applyChanges(tmpCrabCfg,changes)  
-    self.crabCfg =tmpCrabCfg
+    self.crabCfg =copy.deepcopy(tmpCrabCfg)
     return self.crabCfg
   def create(self):
     self.executeCrabCommand("-create",debug = True)
