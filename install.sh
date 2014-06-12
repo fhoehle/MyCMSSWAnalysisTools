@@ -24,6 +24,7 @@ echo "Installing/Updating MyCMSSWAnalysisTools "
 #
 if [[ ! "$CMSSW_BASE" =~ "$cmsswVer" ]]; then
   echo "missing CMSSW_BASE cmsenv"
+  exit 1
 fi
 cd $CMSSW_BASE
 set -e
@@ -84,5 +85,10 @@ getCMSGitPackage FWCore/PythonUtilities
 getCMSGitPackage PhysicsTools/Utilities
 cd $CMSSW_BASE/src
 git am --signoff < $CMSSW_BASE/MyCMSSWAnalysisTools/copyPickMerge_patch.txt
+cd $CMSSW_BASE
+################
+git clone https://github.com/cms-sw/RecoLuminosity-LumiDB.git $CMSSW_BASE/src/RecoLuminosity/LumiDB
+cd $CMSSW_BASE/src/RecoLuminosity/LumiDB
+git checkout V04-02-10
 cd $CMSSW_BASE
 scram b -j 5 
