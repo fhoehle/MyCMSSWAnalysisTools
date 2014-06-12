@@ -125,8 +125,7 @@ class processSample(object):
 #    from os import path
     self.workLoc = path.dirname(self.cfgFileName) + path.sep
   def loadInputCfg(self):
-    with open(self.cfgFileName,'r') as cfgFile:
-      return imp.load_source('cfgTMP',self.cfgFileName,cfgFile);
+    return coreTools.loadFileAsModule(self.cfgFileName,modName='cfgTMP')
   def createTmpCfg(self):
     if self.tmpCfg != None:
       print "tmpCfg already exists ",self.tmpCfg 
