@@ -87,8 +87,19 @@ cd $CMSSW_BASE/src
 git am --signoff < $CMSSW_BASE/MyCMSSWAnalysisTools/copyPickMerge_patch.txt
 cd $CMSSW_BASE
 ################
-git clone https://github.com/cms-sw/RecoLuminosity-LumiDB.git $CMSSW_BASE/src/RecoLuminosity/LumiDB
-cd $CMSSW_BASE/src/RecoLuminosity/LumiDB
-git checkout V04-02-10
+if [ -d "$CMSSW_BASE/src/RecoLuminosity/LumiDB" ]; then 
+  if [-d "$CMSSW_BASE/src/RecoLuminosity/LumiDB/.git" ]; then
+    echo " RecoLuminosity/LumiDB already there and is git repo, check tags just updating"
+    cd $CMSSW_BASE/src/RecoLuminosity/LumiDB/
+    git fetch
+  else
+    echo "warning RecoLuminosity/LumiDB already there, no git repo !!!"
+    echo "git clone https://github.com/cms-sw/RecoLuminosity-LumiDB.git $CMSSW_BASE/src/RecoLuminosity/LumiDB AND git checkout V04-02-10"
+  fi
+else
+  git clone https://github.com/cms-sw/RecoLuminosity-LumiDB.git $CMSSW_BASE/src/RecoLuminosity/LumiDB
+  cd $CMSSW_BASE/src/RecoLuminosity/LumiDB
+  git checkout V04-02-10
+fi
 cd $CMSSW_BASE
 scram b -j 5 
