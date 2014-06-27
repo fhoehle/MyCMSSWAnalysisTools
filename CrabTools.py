@@ -160,19 +160,20 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return '/pnfs/physik.rwth-aachen.de/cms/store/user/fhohle/'+self.crabCfg["USER"]["user_remote_dir"]
     else:
       return None
-  def gridFJRgoodJobs(self,debug=False):
+  def getJobFJR(self,no,debug=False):
     import os
+    fjrPath = None
     if not self.crabJobDir:
-      if debug:
-        print "no self.crabJobDir found"
-      return None
-    resPath = self.crabJobDir+os.path.sep+'res/'
-    if not os.path.exists(resPath):
-      if debug:
-        print "no directory res found in ",self.crabJobDir
-      return None
-    return [ resPath + 'crab_fjr_'+str(no)+'.xml' for no in self.jobRetrievedGood() ] 
-
+      print "no self.crabJobDir found"
+    elif not os.path.exists(resPath):
+      print "no directory res found in ",self.crabJobDir
+    else:
+      fjrPath = self.crabJobDir+os.path.sep+'res/'+ 'crab_fjr_'+str(no)+'.xml'
+      if not os.path.isfile(fjrPath)
+        print "warning fjrPath ",fjrPath," doesnot exist "
+    return fjrPath
+  def gridFJRgoodJobs(self,debug=False):
+    return [ getJobFJR(no) for no in self.jobRetrievedGood() ] 
   def gridOutputfileList(self,debug=False):
     outputFileList = []
     crab_fjr_list = self.gridFJRgoodJobs(debug=debug)
@@ -362,19 +363,42 @@ def loadCrabJob(jsonFilename):
       cP.__dict__ = json.load(jsonFile)
     cP.loadedFromCrabJson = jsonFilename
     return cP
+def getSubmitServer(dbFile,debug=False):
+  print "dbFile ",dbFile
+  import sqlite3
+  conn = sqlite3.connect(dbFile)
+  conn.row_factory = sqlite3.Row
+  cur = conn.cursor()
+  #if debug:
+  #  tabs = cur.execute("SELECT * FROM sqlite_master WHERE type='table';").fetchall()
+  #  for tab in tabs:
+  #    print tab["name"]
+  #    print tab
+  rows = cur.execute("SELECT server_name FROM bl_task")
+  #if rows.arraysize > 1:
+  #  print "error more jobs than expected ",len(rows)
+  #if debug:
+  #  print "rows ",rows
+  srv = rows.next()
+  print "old server ",srv["server_name"]
+  return srv["server_name"]
+
+
 def updateSubmitServer(newServer,dbFile,debug=False):
   import sqlite3 
   conn = sqlite3.connect(dbFile)
   conn.row_factory = sqlite3.Row
   cur = conn.cursor()
+  print "debug ",debug
   if debug:
     tabs = cur.execute("SELECT * FROM sqlite_master WHERE type='table';").fetchall()
+    print tabs
     for tab in tabs:
       print tab["name"]
-  rows = cur.execute("SELECT server_name FROM bl_task").fetchall()
-  if len(rows) > 1:
+  rows = cur.execute("SELECT server_name FROM bl_task") 
+  if rows.arraysiye > 1:
     print "error more jobs than expected ",len(rows)
-  print "old server ",rows[0]["server_name"]
+  print "old server ",rows.next()["server_name"]
   cur.execute("UPDATE bl_task SET server_name='"+newServer+"'")
   conn.commit()
   print "updated to ",newServer
@@ -442,6 +466,7 @@ class crabNanny(object):
     self.crabJobTMPstdout=None
     self.mergeNoParallel = 4;self.mergeSizeNeglect = True
     self.useXRootD = False
+    self.debug=False
     if  self.mergeOutput and not os.path.exists(self.mergeOutput):
       os.makedirs( self.mergeOutput) 
   def startNursing(self,waitingTime=600):
@@ -462,6 +487,8 @@ class crabNanny(object):
           c.automaticResubmit(onlySummary=True) 
         else:        
           if hasattr(c,'isMerged') and c.isMerged:
+            if self.debug:
+              print c.postfix," is merged "
             if hasattr(c,'nursingDone') and c.nursingDone:
               continue
             self.allMerged.append(c)
@@ -479,7 +506,8 @@ class crabNanny(object):
               print "merging not possible, target location does not exist"
             else:
               print "merging ",c.postfix
-              c.mergeNoParallel = self.mergeNoParallel; c.mergeSizeNeglect = self.mergeSizeNeglect; c.doMerging(debug=True,where= self.mergeOutput,parallel=True,useXRootD=self.useXRootD)
+              c.mergeNoParallel = self.mergeNoParallel; c.mergeSizeNeglect = self.mergeSizeNeglect; 
+              c.doMerging(debug=True,where= self.mergeOutput,parallel=True,useXRootD=self.useXRootD)
       if len(self.cJs) == len (self.allMerged):
         dontStop = False
       else:

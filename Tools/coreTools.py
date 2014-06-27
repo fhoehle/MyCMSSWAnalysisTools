@@ -57,10 +57,11 @@ def myGetSubNodeByName(node,name):
    return None
  if not hasattr(node,'childNodes'):
    return None
+ res=[]
  for i,tmp_node in enumerate(node.childNodes):
   if tmp_node.nodeName == name:
-   return tmp_node
- return None
+   res.append(tmp_node)
+ return None if len(res) == 0 else res
 #######################
 # Backport of OrderedDict() class that runs on Python 2.4, 2.5, 2.6, 2.7 and pypy.
 # Passes Python2.7's test suite and incorporates all the latest updates.

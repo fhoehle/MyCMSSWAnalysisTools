@@ -13,6 +13,10 @@ def getMaxEvents(xmlF,jobNos,debug = False):
   maxEvents = {}
   dom = minidom.parse(xmlF)
   arguments = myGetSubNodeByName(dom,"arguments")
+  if len(arguments) != 1:
+    print "mulitple arguments's found"
+    return None
+  arguments=arguments[0]
   for jobNo in jobNos:
     job=getJobNode(arguments,jobNo)
     if job.hasAttribute("MaxEvents"):

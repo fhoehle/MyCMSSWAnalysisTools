@@ -386,15 +386,25 @@ class frameworkJobReportParser (object):
     self.xmlFile = xmlFile
     dom = minidom.parse(xmlFile)
     self.FrameworkJobReport = coreTools.myGetSubNodeByName(dom,"FrameworkJobReport")
+    if len(self.FrameworkJobReport) != 1:
+      print "multiple FrameworkJobReports found"
+      self.FrameworkJobReport = None
+    self.FrameworkJobReport = self.FrameworkJobReport[0]
   def getFile(self):
     self.File = coreTools.myGetSubNodeByName(self.FrameworkJobReport,'File')
+    if len(self.File) != 1:
+      print "multiple Files found"
+      self.File = None
+    self.File=self.File[0]
   def getFileLFN(self):
     import re
     if not hasattr(self,'File'):
       self.getFile()
-    return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'LFN').childNodes])
+    return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'LFN')[0].childNodes])
   def getFileSize(self):
     import re
     if not hasattr(self,'File'):
       self.getFile()
-    return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'Size').childNodes])
+    return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'Size')[0].childNodes])
+  def getInputFiles(self):
+    return [ coreTools.myGetSubNodeByName(iF,'LFN')[0].childNodes[0].nodeValue.strip() for iF in coreTools.myGetSubNodeByName(self.FrameworkJobReport,'InputFile') ]
