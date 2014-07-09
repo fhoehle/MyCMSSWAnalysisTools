@@ -169,7 +169,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       print "no directory res found in ",self.crabJobDir
     else:
       fjrPath = self.crabJobDir+os.path.sep+'res/'+ 'crab_fjr_'+str(no)+'.xml'
-      if not os.path.isfile(fjrPath)
+      if not os.path.isfile(fjrPath):
         print "warning fjrPath ",fjrPath," doesnot exist "
     return fjrPath
   def gridFJRgoodJobs(self,debug=False):
