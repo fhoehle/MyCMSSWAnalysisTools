@@ -31,7 +31,8 @@ class cmsswAnalysis(object):
     parser.add_argument('--runOnData',action='store_true',default=False,help=' activate running on data, will be transmitted to addOptions of cfg')
     parser.add_argument('--outputDirectory',default=os.getenv("PWD")+os.path.sep+'TMP',help='dircetory where output is stored with additional timeStamp')
     parser.add_argument('--useXRootDAccess',action='store_true',default=False,help=' if dcap door down use xrootd alternative access')
-    parser.add_argument('--useSGE',action='store_true',default=False,help=' use SGE system at NAF')
+    parser.add_argument('--useSGE',action='store_true',default=False,help='use SGE system at NAF')
+    parser.add_argument('--useCRAB3',action='store_true',default=False,help='use CRAB 3')
     args = parser.parse_known_args()
     args,notKnownArgs = args
     self.debug = args.debug
@@ -72,6 +73,7 @@ class cmsswAnalysis(object):
     
     self.runParallel= args.runParallel 
     self.runGrid = args.runGrid
+    self.useCRAB3 = args.useCRAB3
     self.specificSamples = args.specificSamples
     self.dontExec = args.dontExec
     self.addOptions=""
@@ -125,7 +127,7 @@ class cmsswAnalysis(object):
           print "ch ",k," ",dataTriggers[k]['data']
       print "remainingOpts ",remainingOpts
       runRange=""
-      if not self.runGrid:
+      if not self.runGrid: # run local
         if self.args.runOnData:  # set runRange 
           import lumiListFromFile
           fileRuns = lumiListFromFile.getLumiListFromFile('dcap://grid-dcap-extern.physik.rwth-aachen.de/pnfs/physik.rwth-aachen.de/cms'+sampDict["localFile"] if sampDict["localFile"].startswith('/store/') else sampDict["localFile"][5:]).getRuns()
