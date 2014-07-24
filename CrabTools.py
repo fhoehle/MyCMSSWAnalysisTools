@@ -100,7 +100,87 @@ class crabProcess(crabDeamonTools.crabDeamon):
       print "copying lumi_mask: ", self.crabCfg['CMSSW']['lumi_mask']," to ",os.path.dirname(cCfg.name) + os.path.sep
       copy2(self.crabCfg['CMSSW']['lumi_mask'],os.path.dirname(cCfg.name) + os.path.sep)
     return cCfg.name 
-  ###
+  def writeCrab3Cfg(self):
+    workarea = "crab_projects"
+    jobCmsCfg = "test"
+    jobTask = self.postfix+'_'+self.timeSt
+    publishName = "test"
+    header =    ("from WMCore.DataStructs.LumiList import LumiList\n"
+		"from WMCore.Configuration import Configuration\n"
+		"config = Configuration()\n")
+    general =   ('config.section_("General")\n'
+                'config.General.requestName = "' + jobTask +'"\n'
+                'config.General.workArea  = "'+workarea+'"\n')
+    
+    jobtype =  ('config.section_("JobType")\n'
+               'config.JobType.pluginName = "Analysis"\n'
+               'config.JobType.psetName = "'+self.cfg+'"\n')
+    
+    data =     ('config.section_("Data")\n'
+               'config.Data.inputDataset = "'+self.samp+'"\n'
+	       'config.Data.dbsUrl = "global"\n'
+	       'config.Data.splitting = "FileBased"\n'
+	       'config.Data.unitsPerJob = 1\n'
+               'config.Data.publication = True\n'
+	       'config.Data.publishDbsUrl = "phys03"\n'
+	       'config.Data.publishDataName = "'+self.postfix+'_'+self.timeSt+'"\n')
+    site =     ('config.section_("Site")\n'
+               'config.Site.storageSite ="T2_DE_RWTH"\n')
+    self.crab3Dict = {};
+    self.crab3Dict['jobTask'] = "crab_"+jobTask
+    crab3Cfg_name = self.crabDir.rstrip('/')+os.path.sep+"crab3_cfg.py"
+    self.crab3Dict['cfgName'] = crab3Cfg_name
+    with open(crab3Cfg_name,'w') as crab3Cfg:  
+      crab3Cfg.write(header+"\n"+general+"\n"+jobtype+"\n"+data+"\n"+site)
+    return crab3Cfg_name
+  ###################
+  def executeCommand3 (self,command,debug = False,returnOutput = False,where = ''):
+    if not hasattr(self,'crab3Dict') and not ' create' in command:
+      print "no crab3Dict given "; return 1
+    import subprocess,os,sys
+    whereExec = ""
+    if not '-create' in command:
+      whereExec = "-t "+self.crab3Dict["jobTask"]+" "
+    stopKey = 'stopKeyDONE'
+    command = ("cd "+where+" &&" if where else "")+ " crab "+whereExec +command+' ;echo "returnCodeCrab: "$?"!"; echo "'+stopKey+'"'
+    if debug:
+      print "executing command ",command
+    subPrOutput = subprocess.Popen([command],bufsize=1 , stdin=open(os.devnull),shell=True,stdout=(open(self.stdoutTMPfile,'w') if hasattr(self,'stdoutTMPfile') and self.stdoutTMPfile else subprocess.PIPE ),env=os.environ)
+    subPStdOut = [];crabExitCode=None
+    if debug:
+      print "waiting for Crab"
+    if hasattr(self,'stdoutTMPfile') and self.stdoutTMPfile:
+      subPrOutput.wait()
+    for i,line in enumerate(iter((open(self.stdoutTMPfile).readline if hasattr(self,'stdoutTMPfile') and self.stdoutTMPfile else subPrOutput.stdout.readline),stopKey+'\n')):
+      if 'returnCodeCrab' in line:
+        crabExitCode=line
+      if debug:
+        print line,
+      if not hasattr(self,'stdoutTMPfile') or not self.stdoutTMPfile:
+        subPStdOut.append(line)
+    if not hasattr(self,'stdoutTMPfile') or not self.stdoutTMPfile:
+      subPrOutput.stdout.close()
+    crabExitCode = re.match('returnCodeCrab:\ ([^!]*)!',crabExitCode).group(1) if re.match('returnCodeCrab:([^!]*)!',crabExitCode) else None
+    if subPrOutput.poll() == None:
+      os.kill(subPrOutput.pid,9)
+    if not returnOutput:
+      if debug:
+        print "Crab ExitCode ",crabExitCode
+      return crabExitCode
+    else:
+      return open(self.stdoutTMPfile) if hasattr(self,'stdoutTMPfile') and self.stdoutTMPfile else subPStdOut
+  def executeCrab3Command(self,self,command,debug = False,returnOutput = False):
+    if not hasattr(self,'crabDir'):
+      sys.exit('crab dir is missing')
+    return  self.executeCommand(command,debug ,returnOutput,where=self.crabDir)
+  def submitCrab3(self):
+    if not has_attr(self,'crab3Dict'):
+      self.writeCrab3Cfg()
+    if not self.crab3Dict.has_key('cfgName')
+      print "no cfgName for crab3 found"
+      return 1
+    self.executeCrab3Command("submit "+self.crab3Dict['cfgName'],debug = True)
+    return 0
   def setCrabDir(self,addCrabDir ="",timeSt = "",workdir = ""):
     if not workdir == "":
        self.workdir = workdir
