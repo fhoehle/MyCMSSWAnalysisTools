@@ -84,7 +84,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     import sys,os
     if not checkGridCert():
       sys.exit("grid cert not okay, test voms-proxy-init failed")
-    if not os.environ.has_key("CRABDIR"):
+    import distutils.spawn 
+    if not os.environ.has_key("CRABDIR") and distutils.spawn.find_executable('crab') == "":
       sys.exit("crab not found")
   def writeCrabCfg(self):
     import os
@@ -174,9 +175,11 @@ class crabProcess(crabDeamonTools.crabDeamon):
       sys.exit('crab dir is missing')
     return  self.executeCommand(command,debug ,returnOutput,where=self.crabDir)
   def submitCrab3(self):
-    if not has_attr(self,'crab3Dict'):
+    if not hasattr(self,'crab3Dict'):
       self.writeCrab3Cfg()
-    if not self.crab3Dict.has_key('cfgName')
+    self.crabJobDir = self.crabDir
+    self.useCRAB3 = True
+    if not self.crab3Dict.has_key('cfgName'):
       print "no cfgName for crab3 found"
       return 1
     self.executeCrab3Command("submit "+self.crab3Dict['cfgName'],debug = True)

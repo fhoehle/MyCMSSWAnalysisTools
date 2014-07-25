@@ -281,7 +281,8 @@ class cmsswAnalysis(object):
           crabPs.append(crabP)
         print "number of crabs ",len(crabPs)
         for crabP in crabPs:
-          crabP.create()#executeCrabCommand("-create",debug = True) 
+          if not self.useCRAB3:
+            crabP.create()#executeCrabCommand("-create",debug = True) 
           CrabTools.saveCrabProp(crabP)
           if not dontExecCrab:
               if self.useCRAB3:
