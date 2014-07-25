@@ -169,7 +169,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return crabExitCode
     else:
       return open(self.stdoutTMPfile) if hasattr(self,'stdoutTMPfile') and self.stdoutTMPfile else subPStdOut
-  def executeCrab3Command(self,self,command,debug = False,returnOutput = False):
+  def executeCrab3Command(self,command,debug = False,returnOutput = False):
     if not hasattr(self,'crabDir'):
       sys.exit('crab dir is missing')
     return  self.executeCommand(command,debug ,returnOutput,where=self.crabDir)

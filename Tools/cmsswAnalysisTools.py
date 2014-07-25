@@ -236,7 +236,10 @@ class cmsswAnalysis(object):
             print "test ",crabP.crabCfg
             if crabP.crabCfg.has_key("USER") and crabP.crabCfg.get("USER").has_key('publish_data_name') and not crabP.timeSt in crabP.crabCfg["USER"]['publish_data_name']:
                crabP.crabCfg["USER"]['publish_data_name'] += ('_' if crabP.crabCfg["USER"]['publish_data_name'].endswith('_') else '' ) + crabP.timeSt
-            crabP.writeCrabCfg()
+            if self.useCRAB3:
+              crabP.writeCrab3Cfg()
+            else:
+              crabP.writeCrabCfg()
             crabPs.append(crabP)
  
 
@@ -271,15 +274,22 @@ class cmsswAnalysis(object):
           crabP.createCrabDir()
           if crabP.crabCfg.has_key("USER") and crabP.crabCfg.get("USER").has_key('publish_data_name') and not crabP.timeSt in crabP.crabCfg["USER"]['publish_data_name']:
             crabP.crabCfg["USER"]['publish_data_name'] += ('_' if not crabP.crabCfg["USER"]['publish_data_name'].endswith('_') else '' ) + crabP.timeSt
-          crabP.writeCrabCfg()
+          if self.useCRAB3:
+            crabP.writeCrab3Cfg()
+          else:
+            crabP.writeCrabCfg()
           crabPs.append(crabP)
         print "number of crabs ",len(crabPs)
         for crabP in crabPs:
           crabP.create()#executeCrabCommand("-create",debug = True) 
           CrabTools.saveCrabProp(crabP)
           if not dontExecCrab:
-              crabP.submit()
-              crabP.executeCrabCommand("-status")
+              if self.useCRAB3:
+                crabP.submitCrab3()
+                crabP.executeCrab3Command("status")
+              else:
+                crabP.submit()
+                crabP.executeCrabCommand("-status")
           self.bookKeeping.addCrab(crabP.crabJsonFile)
     #processSample.end()
     dontExecParallel = self.dontExec
