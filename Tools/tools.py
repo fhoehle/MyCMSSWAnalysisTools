@@ -79,7 +79,7 @@ class sample(object):
     print "filenames, ",self.filenames,","
     inputFiles = None
     if self.filenames != [None] or self.filenames != [] or self.filenames:
-      inputFiles = cms.untracked.vstring([f for f in self.filenames if f and (f.startswith('file:/') or  f.startswith('/store/')) ])
+      inputFiles = cms.untracked.vstring([f for f in self.filenames if f and (f.startswith('file:/') or  f.startswith('/store/')) or f.startswith('root://')])
     if self.useXRootDAccess:
       import alternativeLocation
       xRootDPathMaker = alternativeLocation.xRootDPathCreator(debug=self.debug)

@@ -130,7 +130,7 @@ class cmsswAnalysis(object):
       if not self.runGrid: # run local
         if self.args.runOnData:  # set runRange 
           import lumiListFromFile
-          fileRuns = lumiListFromFile.getLumiListFromFile('dcap://grid-dcap-extern.physik.rwth-aachen.de/pnfs/physik.rwth-aachen.de/cms'+sampDict["localFile"] if sampDict["localFile"].startswith('/store/') else sampDict["localFile"][5:]).getRuns()
+          fileRuns = lumiListFromFile.getLumiListFromFile(sampDict["localFile"] ).getRuns()
           runRange=" runRange="+fileRuns[0]+"-"+fileRuns[-1]
         cfgSamp = myTools.compileCfg(tmpCfg,myTools.removeDuplicateCmsRunOpts(remainingOpts) + runRange,postfix,debug= self.debug ) 
         processSample =  myTools.processSample(cfgSamp)
