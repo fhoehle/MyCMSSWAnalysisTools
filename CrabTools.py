@@ -174,6 +174,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     if not hasattr(self,'crabDir'):
       sys.exit('crab dir is missing')
     return  self.executeCommand(command,debug ,returnOutput,where=self.crabDir)
+  def reportCrab3(self):
+    self.executeCrab3Command("report ",debug = True)
   def submitCrab3(self):
     if not hasattr(self,'crab3Dict'):
       self.writeCrab3Cfg()
