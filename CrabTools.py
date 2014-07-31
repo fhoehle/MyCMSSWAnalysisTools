@@ -36,8 +36,8 @@ crabCfg = {
     ,"storage_element" : "T2_DE_RWTH"
     ,"user_remote_dir" : "/MyTestOutputRemoteDir/"
     ,"check_user_remote_dir": 0
-    #,"publish_data" : 1
-    #,"publish_data_name" : "MyTestPublish"
+    ,"publish_data" : 1
+    ,"publish_data_name" : "MyTestPublish"
     #,"dbs_url_for_publication" : "https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_02_writer/servlet/DBSServlet"
     #,"additional_input_files":"/test/tta01.lhef"
     #,"script_exe" : "test.sh"
@@ -69,6 +69,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.samp = samp
     self.workdir = workdir
     self.timeSt = timeSt 
+    self.id = self.postfix+"_"+self.timeSt
     self.addGridDir = addGridDir
     self.user_remote_dir = self.addGridDir +( "/" if self.addGridDir != "" and self.addGridDir != None else "") #+ self.postfix+"_"+self.timeSt
     self.__type__="crabProcess"
@@ -214,6 +215,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
     tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
     tmpCrabCfg["CMSSW"].pop("output_file",None)
     tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp
+    tmpCrabCfg["USER"]["publish_data_name"] = self.id 
     if changes != None:
       self.applyChanges(tmpCrabCfg,changes)  
     self.crabCfg =copy.deepcopy(tmpCrabCfg)
