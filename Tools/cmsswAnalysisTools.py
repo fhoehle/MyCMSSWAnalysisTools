@@ -237,7 +237,7 @@ class cmsswAnalysis(object):
             if crabP.crabCfg.has_key("USER") and crabP.crabCfg.get("USER").has_key('publish_data_name') and not crabP.timeSt in crabP.crabCfg["USER"]['publish_data_name']:
                crabP.crabCfg["USER"]['publish_data_name'] += ('_' if crabP.crabCfg["USER"]['publish_data_name'].endswith('_') else '' ) + crabP.timeSt
             if self.useCRAB3:
-              crabP.writeCrab3Cfg()
+              crabP.writeCrab3Cfg(True,lumiMask=shJ.JSONfileName)
             else:
               crabP.writeCrabCfg()
             crabPs.append(crabP)

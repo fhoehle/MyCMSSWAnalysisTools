@@ -74,6 +74,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
     self.__type__="crabProcess"
     self.crabJobDir = None
     self.checkRequirements()
+    self.useCRAB3 = False
   def applyChanges(self,willBeChanged,changesGivenHere):
     for k,i in changesGivenHere.iteritems():
       if not willBeChanged.has_key(k):
@@ -101,11 +102,13 @@ class crabProcess(crabDeamonTools.crabDeamon):
       print "copying lumi_mask: ", self.crabCfg['CMSSW']['lumi_mask']," to ",os.path.dirname(cCfg.name) + os.path.sep
       copy2(self.crabCfg['CMSSW']['lumi_mask'],os.path.dirname(cCfg.name) + os.path.sep)
     return cCfg.name 
-  def writeCrab3Cfg(self):
+  def writeCrab3Cfg(self,runOnData=False,lumiMask=''):
     workarea = "crab_projects"
     jobCmsCfg = "test"
     jobTask = self.postfix+'_'+self.timeSt
-    publishName = "test"
+    inputDataDBSurl = "global"
+    splitting = "FileBased" if not runOnData else 'LumiBased'
+    unitsPerJob = 1 if not runOnData else 5 
     header =    ("from WMCore.DataStructs.LumiList import LumiList\n"
 		"from WMCore.Configuration import Configuration\n"
 		"config = Configuration()\n")
@@ -119,12 +122,14 @@ class crabProcess(crabDeamonTools.crabDeamon):
     
     data =     ('config.section_("Data")\n'
                'config.Data.inputDataset = "'+self.samp+'"\n'
-	       'config.Data.dbsUrl = "global"\n'
-	       'config.Data.splitting = "FileBased"\n'
-	       'config.Data.unitsPerJob = 1\n'
+	       'config.Data.dbsUrl = "'+inputDataDBSurl+'"\n'
+	       'config.Data.splitting = "'+splitting+'"\n'
+	       'config.Data.unitsPerJob = '+str(unitsPerJob)+'\n'
                'config.Data.publication = True\n'
 	       'config.Data.publishDbsUrl = "phys03"\n'
 	       'config.Data.publishDataName = "'+self.postfix+'_'+self.timeSt+'"\n')
+    if runOnData:
+      data = data+'config.Data.lumiMask = "'+lumiMask+'"\n'
     site =     ('config.section_("Site")\n'
                'config.Site.storageSite ="T2_DE_RWTH"\n')
     self.crab3Dict = {};

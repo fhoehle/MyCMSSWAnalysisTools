@@ -64,7 +64,7 @@ class sample(object):
     self.datasetName = datasetName
     self.useXRootDAccess=False
     self.debug=False
-    if not isinstance(filenames,list):
+    if not isinstance(filenames,list) and not filenames:
      self.filenames = [filenames]
      print "correcting",filenames
     else:
@@ -78,8 +78,12 @@ class sample(object):
   def getInputfiles(self):
     print "filenames, ",self.filenames,","
     inputFiles = None
-    if self.filenames != [None] or self.filenames != [] or self.filenames:
+    if self.filenames != [None]:
+      print 'hae'
+    if self.filenames != [None] and self.filenames != [] and not self.filenames:
       inputFiles = cms.untracked.vstring([f for f in self.filenames if f and (f.startswith('file:/') or  f.startswith('/store/')) or f.startswith('root://')])
+    else:
+      return None
     if self.useXRootDAccess:
       import alternativeLocation
       xRootDPathMaker = alternativeLocation.xRootDPathCreator(debug=self.debug)
