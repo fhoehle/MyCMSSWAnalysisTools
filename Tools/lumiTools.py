@@ -8,9 +8,10 @@ def getIntLumiByCmd(jsonFile,addLumiOpt,debug,tool="pixelLumiCalc.py"):
     if debug:
       print cmd
     stdout,exitC = coreTools.executeCommandSameEnvBkpReturnCode(cmd)
-    if exitC != 0:
+    if not re.match(" *0 *",exitC):
         print "command failed: ",cmd
         print "exitC ",exitC
+        print "stdout ",stdout
         return ""
     if debug:
       print stdout
@@ -20,12 +21,13 @@ def calcLumi(jsonFile,addLumiOpt='',debug=False):
     if isinstance(jsonFile,LumiList):
       jsonFile.writeJSON(tmpFileName)
       jsonFile=tmpFileName
-    csvFile = getIntLumiByCmd(jsonFile=jsonFile,addLumiOpt=addLumiOpt,debug=debug)
-    csvFileOutput = None 
-    print "csvFile ",csvFile
-    if not csvFile or not os.path.isfile(csvFile):
-      csvFileOutput = str(getIntLumiByCmd(tool="lumiCalc2.py",jsonFile=jsonFile,addLumiOpt=addLumiOpt,debug=debug))
+    csvFileOutput = getIntLumiByCmd(jsonFile=jsonFile,addLumiOpt=addLumiOpt,debug=debug) 
+    if debug:
       print "csvFileOutput ",csvFileOutput
+    if not csvFileOutput or not os.path.isfile(csvFileOutput):
+      csvFileOutput = str(getIntLumiByCmd(tool="lumiCalc2.py",jsonFile=jsonFile,addLumiOpt=addLumiOpt,debug=debug))
+      if debug:
+        print "csvFileOutput ",csvFileOutput
     intLumi = 0
     if not csvFileOutput or not os.path.isfile(csvFileOutput):
       print "warning not lumiCalc output "
@@ -35,7 +37,6 @@ def calcLumi(jsonFile,addLumiOpt='',debug=False):
       if match:
         intLumi += float(match.group(1))
     os.remove(csvFileOutput)
-    os.remove(csvFile)
     if tmpFileName == jsonFile:
        os.remove(tmpFileName)
     if debug:

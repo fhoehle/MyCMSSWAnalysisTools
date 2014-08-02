@@ -2,6 +2,7 @@ import string
 import random
 import subprocess
 import imp
+import re
 ######################
 def idGenerator(size=6, chars=string.ascii_letters + string.digits):
   return ''.join(random.choice(chars) for _ in range(size))
@@ -32,7 +33,7 @@ def executeCommandSameEnvBkpReturnCode(command,debug=False,stdoutTMP=None):
       subPrOutput.wait()
     for i,line in enumerate(iter((open(stdoutTMP).readline if stdoutTMP else subPrOutput.stdout.readline),stopKey+'\n')):
       if 'returnCode' in line:
-        exitCode=line
+        exitCode=re.match('.*returnCode: (.)!.*',line).group(1).strip() if re.match('.*returnCode: (.)!.*',line) else None
       if debug:
         print line,
       if not stdoutTMP:

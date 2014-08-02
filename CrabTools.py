@@ -223,10 +223,10 @@ class crabProcess(crabDeamonTools.crabDeamon):
   def create(self):
     self.executeCrabCommand("-create",debug = True)
     self.findCrabJobDir(self.crabDir)
-  def reportLumi(self):
+  def reportLumi(self,debug=False):
     import re
     import Tools.lumiTools as lumiTools
-    self.executeCrabCommand("-report",debug = True) 
+    self.executeCrabCommand("-report",debug = debug) 
     self.intLuminosity=lumiTools.calcLumi(self.crabJobDir+"/res/lumiSummary.json")
     return self.intLuminosity
   def changeCrabJobDir(self,newDir):
