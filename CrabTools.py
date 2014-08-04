@@ -3,6 +3,7 @@ import sys,os
 sys.path.extend([ os.getenv('CMSSW_BASE')+os.path.sep+p for p in ['MyCrabTools','MyCMSSWAnalysisTools','ParallelizationTools']])
 import crabDeamonTools
 import Tools.tools as tools
+import MyDASTools.dasTools as dasTools
 import Tools.alternativeLocation as alternativeLocation
 crabCfg = {
   "CRAB" :{
@@ -91,6 +92,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       sys.exit("crab not found")
   def writeCrabCfg(self):
     import os
+    self.stdoutTMPfile=self.crabDir.rstrip('/')+os.path.sep+self.id+"_TMPstdout.txt"
     cCfg = open(self.crabDir.rstrip('/')+os.path.sep+"crab.cfg" ,'w')
     for sec,vals in self.crabCfg.iteritems():
       cCfg.write("["+sec+"]");cCfg.write("\n")
@@ -252,20 +254,20 @@ class crabProcess(crabDeamonTools.crabDeamon):
       return '/pnfs/physik.rwth-aachen.de/cms/store/user/fhohle/'+self.crabCfg["USER"]["user_remote_dir"]
     else:
       return None
-  def getJobFJR(self,no,debug=False):
+  def getJobFJR(self,no,debug=False,resPath=""):
     import os
     fjrPath = None
     if not self.crabJobDir:
       print "no self.crabJobDir found"
-    elif not os.path.exists(resPath):
-      print "no directory res found in ",self.crabJobDir
+    #elif not os.path.exists(resPath):
+    #  print "no directory res found in ",self.crabJobDir
     else:
       fjrPath = self.crabJobDir+os.path.sep+'res/'+ 'crab_fjr_'+str(no)+'.xml'
       if not os.path.isfile(fjrPath):
         print "warning fjrPath ",fjrPath," doesnot exist "
     return fjrPath
   def gridFJRgoodJobs(self,debug=False):
-    return [ getJobFJR(no) for no in self.jobRetrievedGood() ] 
+    return [ self.getJobFJR(no) for no in self.jobRetrievedGood() ] 
   def gridOutputfileList(self,debug=False):
     outputFileList = []
     crab_fjr_list = self.gridFJRgoodJobs(debug=debug)
@@ -317,7 +319,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       os.makedirs(baseOutputDir)
     #self.mergeGirdJobDict["mergeOutputDir"]=baseOutputDir
     #self.mergeGirdJobDict["postfix"]=self.postfix
-    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',tools.frameworkJobReportParser(fjrs[0]).getFileLFN()).group(1)+'merged'
+    outputFilename=baseOutputDir+re.match('.*\/([^\/]*_)[0-9][0-9]*_[0-9][0-9]*_[a-zA-Z0-9][a-zA-Z0-9][a-zA-Z0-9]\.root',tools.frameworkJobReportParser(fjrs[0]).getFileLFN()).group(1)+'merged_'+self.id
     # create merge cfg
     mergeTempCmd = os.getenv('CMSSW_BASE')+'/src/PhysicsTools/Utilities/configuration/copyPickMerge_cfg.py inputFiles_load='+inputFileList+' outputFile='+outputFilename+" "+cmsswOpts
     if debug:
@@ -413,7 +415,29 @@ class crabProcess(crabDeamonTools.crabDeamon):
     with open (self.mergeCrabLogJson,'w') as jsonMergeLog:
       json.dump(tmpDict,jsonMergeLog,indent=2)
     return tmpReturnVal
-  
+##########################3
+def getInputValuesForCrabJob(cJ, jobNum,debug=False):
+  import xml.dom.minidom as minidom
+  inputArgs = cJ.crabJobDir+"/share/arguments.xml" 
+  if debug:
+    print "inputArgs ",inputArgs
+  dom =  minidom.parse(inputArgs) 
+  args = tools.coreTools.myGetSubNodeByName(dom,"arguments")
+  res = {}
+  for tmp_node in args[0].childNodes:
+    if debug:
+      print "nodeName ",tmp_node.nodeName
+    if tmp_node.nodeName == "Job":
+      if debug:
+        print "JobId ",tmp_node.getAttribute('JobID')
+      if tmp_node.getAttribute('JobID') == str(jobNum):
+        if debug:
+          print "JobID ",tmp_node.getAttribute('JobID')
+        for att in tmp_node.attributes.values():
+          res[att.name] = att.value
+        break
+  return res  
+#########################
 def getCrabJobDatasetname(cJ,debug=False):
   gridFileList = cJ.gridOutputfileList()
   if not isinstance(gridFileList,list) or len(gridFileList) == 0:
@@ -421,9 +445,16 @@ def getCrabJobDatasetname(cJ,debug=False):
     return None
   if debug:
     print "gridFileList ",gridFileList
-  import MyDASTools.dasTools as dasTools
   dasC = dasTools.myDasClient()
-  return dasC.getDataSetNameForFile(gridFileList[0],'instance=prod/phys03')
+  dSname = dasC.getDataSetNameForFile(gridFileList[0],'instance=prod/phys03')
+  if not cJ.crabCfg['USER'].has_key('publish_data') or cJ.crabCfg['USER']['publish_data'] == 0:
+    print "no publish option was given",cJ.crabCfg['USER'] 
+  else:
+    if len(dSname) == 1 and cJ.crabCfg['USER']['publish_data_name'] in dSname[0]:
+      print "datasetname successfully tested",dSname," ",cJ.crabCfg['USER']['publish_data_name']
+    else:
+      print "warning datasetname test failed ",cJ.crabCfg['USER']['publish_data_name']," ",dSname
+  return dSname
 #############################################################
 def commandAcGridFolder(command,gridFolder):
     import subprocess,os,sys
@@ -435,6 +466,19 @@ def commandAcGridFolder(command,gridFolder):
 def removeGridFolderCrab(cJ):
   commandAcGridFolder("rm ",cJ.getAcGridDir().rstrip("/")+"/*")
   commandAcGridFolder("rmdir ",cJ.getAcGridDir().rstrip("/"))
+def createCrabSummary(cJs,data=False):
+  crabJobResults = {}
+  import json
+  resFile = open("crabJobResults.JSON","w")
+  for c in cJs:
+    crabJobResults[c.id]={"datasetName":getCrabJobDatasetname(c)[0]}
+    if data:
+      crabJobResults[c.id]["crabIntLumi"] = c.reportLumi()
+    dasC = dasTools.myDasClient()
+    crabJobResults[c.id]["dasNevents"] = dasC.getNEventsForDataset(crabJobResults[c.id]["datasetName"],addQuery = 'instance=prod/phys03')
+  json.dump(crabJobResults,resFile,indent=2)
+  resFile.close()
+  return resFile.name
 def saveCrabProp(crabP,alternativeJSONname=None):
     jsonFilename = crabP.crabJsonFile if not alternativeJSONname else alternativeJSONname
     print "saving crab configuration: ",jsonFilename
