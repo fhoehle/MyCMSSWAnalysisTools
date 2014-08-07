@@ -217,9 +217,12 @@ class crabProcess(crabDeamonTools.crabDeamon):
     tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
     tmpCrabCfg["CMSSW"].pop("output_file",None)
     tmpCrabCfg["CMSSW"]["datasetpath"]=self.samp
-    tmpCrabCfg["USER"]["publish_data_name"] = self.id 
     if changes != None:
-      self.applyChanges(tmpCrabCfg,changes)  
+      self.applyChanges(tmpCrabCfg,changes) 
+    if tmpCrabCfg["USER"]["publish_data_name"] == "MyTestPublish":
+      tmpCrabCfg["USER"]["publish_data_name"] = tmpCrabCfg["CMSSW"]["datasetpath"].split('/')[1]+"_"+self.timeSt
+    else:
+      tmpCrabCfg["USER"]["publish_data_name"] = tmpCrabCfg["USER"]["publish_data_name"]+"_"+self.timeSt
     self.crabCfg =copy.deepcopy(tmpCrabCfg)
     return self.crabCfg
   def create(self):
