@@ -302,7 +302,7 @@ class bookKeeping():
   def save(self,outputPath,timeStamp):
     import json
     with open(outputPath+'bookKeeping_'+timeStamp+'.json','wb') as bookKeepingFile:
-      json.dump(self.data,bookKeepingFile)
+      json.dump(self.data,bookKeepingFile,indent=2)
   def addCrab(self,crabJson):
     self.data[self.postfix]["crabJob"]=crabJson
 #####
@@ -410,5 +410,19 @@ class frameworkJobReportParser (object):
     if not hasattr(self,'File'):
       self.getFile()
     return " ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'Size')[0].childNodes])
+  def getOutputFileEvents(self,debug=False):
+    import re
+    if not hasattr(self,'File'):
+      self.getFile()
+    return int(" ".join([str(re.sub(r'\s', '', n.nodeValue)) for n in coreTools.myGetSubNodeByName(self.File,'TotalEvents')[0].childNodes]))
+  def getInputFileParameters(self,debug=False):
+    res = []
+    for iF in coreTools.myGetSubNodeByName(self.FrameworkJobReport,'InputFile'):
+      if debug:
+        print 'LFN ',coreTools.myGetSubNodeByName(iF,'LFN')[0].childNodes[0]," ",'EventsRead ',coreTools.myGetSubNodeByName(iF,'EventsRead')[0].childNodes[0].nodeValue.strip()
+      res.append({ 'LFN':coreTools.myGetSubNodeByName(iF,'LFN')[0].childNodes[0].nodeValue.strip(),'EventsRead':int(coreTools.myGetSubNodeByName(iF,'EventsRead')[0].childNodes[0].nodeValue.strip()) })
+    return res
   def getInputFiles(self):
-    return [ coreTools.myGetSubNodeByName(iF,'LFN')[0].childNodes[0].nodeValue.strip() for iF in coreTools.myGetSubNodeByName(self.FrameworkJobReport,'InputFile') ]
+    return [ iF['LFN'] for iF in self.getInputFileParameters() ]  
+  def getNumberOfInputEvents(self,debug=False):
+    return sum( [ iF['EventsRead'] for iF in self.getInputFileParameters(debug=debug) ] )

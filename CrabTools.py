@@ -280,6 +280,16 @@ class crabProcess(crabDeamonTools.crabDeamon):
       jobRep = tools.frameworkJobReportParser(fjr) 
       outputFileList.append(jobRep.getFileLFN())
     return outputFileList
+  def getOutputEvents(self,debug=False):
+    crab_fjr_list = self.gridFJRgoodJobs(debug=debug)
+    if debug:
+      print crab_fjr_list
+    return sum ([ tools.frameworkJobReportParser(fjr).getOutputFileEvents(debug=debug) for fjr in crab_fjr_list ])
+  def getReadEvents(self,debug=False):
+    crab_fjr_list = self.gridFJRgoodJobs(debug=debug)
+    if debug:
+      print crab_fjr_list
+    return sum ([ tools.frameworkJobReportParser(fjr).getNumberOfInputEvents(debug=debug) for fjr in crab_fjr_list ])
   def writeOutputFileList(self,prefix=""):
     if not self.crabDir:
       print "no crabDir set"
@@ -417,7 +427,19 @@ class crabProcess(crabDeamonTools.crabDeamon):
         tmpDict['parallelMerge']=pR.jsonLogFileName
     with open (self.mergeCrabLogJson,'w') as jsonMergeLog:
       json.dump(tmpDict,jsonMergeLog,indent=2)
+    self.updateCrabJson()
     return tmpReturnVal
+  def updateCrabJson(self):
+    import json
+    oldJson = json.load(open(self.crabJsonFile))
+    import datadiff
+    diffRes = datadiff.diff(oldJson,self.__dict__)
+    if 'delete' in [d[0] for d in diffRes.diffs]:
+      print "information deleted!\n",diffRes
+      return 1
+    else :
+      json.dump(self.__dict__,open(self.crabJsonFile,'w'),indent=2)
+      return 0
 ##########################3
 def getInputValuesForCrabJob(cJ, jobNum,debug=False):
   import xml.dom.minidom as minidom
@@ -469,16 +491,25 @@ def commandAcGridFolder(command,gridFolder):
 def removeGridFolderCrab(cJ):
   commandAcGridFolder("rm ",cJ.getAcGridDir().rstrip("/")+"/*")
   commandAcGridFolder("rmdir ",cJ.getAcGridDir().rstrip("/"))
-def createCrabSummary(cJs,data=False):
+def createCrabSummary(cJs,data=False,alternativeLocation = "crabJobResults.JSON"):
   crabJobResults = {}
   import json
-  resFile = open("crabJobResults.JSON","w")
+  loc=alternativeLocation
+  resFile = open(alternativeLocation,"w")
   for c in cJs:
-    crabJobResults[c.id]={"datasetName":getCrabJobDatasetname(c)[0]}
+    crabJobResults[c.id]={"publishDatasetName":getCrabJobDatasetname(c)[0],"crabId":c.id}
     if data:
       crabJobResults[c.id]["crabIntLumi"] = c.reportLumi()
     dasC = dasTools.myDasClient()
-    crabJobResults[c.id]["dasNevents"] = dasC.getNEventsForDataset(crabJobResults[c.id]["datasetName"],addQuery = 'instance=prod/phys03')
+    crabJobResults[c.id]["dasNeventsOutput"] = dasC.getNEventsForDataset(crabJobResults[c.id]["publishDatasetName"],addQuery = 'instance=prod/phys03')
+    crabJobResults[c.id]["dasNeventsInput"] = dasC.getNEventsForDataset(c.crabCfg["CMSSW"]["datasetpath"],addQuery = 'instance=prod/'+('global' if "prod_global" in c.crabCfg["CMSSW"]["dbs_url"] else 'phys03'))
+    crabJobResults[c.id]["EventsRead"] = c.getReadEvents()
+    crabJobResults[c.id]["EventsOutput"] = c.getOutputEvents()
+    if int(crabJobResults[c.id]["dasNeventsInput"]) != crabJobResults[c.id]["EventsRead"]:
+      print "warning DAS input events ", crabJobResults[c.id]["dasNeventsInput"] ," and read events ",crabJobResults[c.id]["EventsRead"]," not equal"
+    if crabJobResults[c.id]["EventsOutput"] != int(crabJobResults[c.id]["dasNeventsOutput"]):
+      print "number of output events from reports ",crabJobResults[c.id]["EventsOutput"]," differs from published das result ",crabJobResults[c.id]["dasNeventsOutput"]
+    crabJobResults[c.id]["crabJson"]=c.crabJsonFile
   json.dump(crabJobResults,resFile,indent=2)
   resFile.close()
   return resFile.name

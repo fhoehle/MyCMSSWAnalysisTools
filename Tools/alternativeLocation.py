@@ -9,7 +9,7 @@ class xRootDPathCreator(object):
     self.debug=debug
   def findXRootDPrefix(self):
     dom = minidom.parse(self.confF)
-    storageMapping = coreTools.myGetSubNodeByName(dom,'storage-mapping')
+    storageMapping = coreTools.myGetSubNodeByName(dom,'storage-mapping')[0]
     xRootDPrefix=None
     for n in storageMapping.childNodes:
       if n.nodeName == 'lfn-to-pfn' and n.hasAttribute('protocol'):
