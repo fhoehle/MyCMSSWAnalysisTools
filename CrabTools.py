@@ -10,7 +10,7 @@ crabCfg = {
     "jobtype":"cmssw"
     ,"scheduler" : "remoteGlidein" #sge
     #,"server_name" : "legnaro"
-    #,"submit_host": "cern_vocms20" #"cern_vocms83"
+    #,"submit_host": "ucsd_submit-6" #cern_vocms20" #"cern_vocms83" # from ~/.cms_crab/0_GET_AvailableServerList
     ,"use_server" : 0
     }
   #,"SGE":{
@@ -211,7 +211,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
   ##
   def createCrabCfg(self,changes = None):
     import copy
-    tmpCrabCfg = crabCfg
+    tmpCrabCfg = copy.deepcopy(crabCfg)
     tmpCrabCfg["CMSSW"]["pset"]=self.cfg
     tmpCrabCfg["USER"]["user_remote_dir"] = self.user_remote_dir
     tmpCrabCfg["CMSSW"]["get_edm_output"] = 1
@@ -220,7 +220,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
     if changes != None:
       self.applyChanges(tmpCrabCfg,changes) 
     if tmpCrabCfg["USER"]["publish_data_name"] == "MyTestPublish":
-      tmpCrabCfg["USER"]["publish_data_name"] = tmpCrabCfg["CMSSW"]["datasetpath"].split('/')[1]+"_"+self.timeSt
+      tmpCrabCfg["USER"]["publish_data_name"] = tmpCrabCfg["CMSSW"]["datasetpath"].split('/')[1]+"_"+tmpCrabCfg["CMSSW"]["datasetpath"].split('/')[2]+"_"+self.timeSt
     else:
       tmpCrabCfg["USER"]["publish_data_name"] = tmpCrabCfg["USER"]["publish_data_name"]+"_"+self.timeSt
     self.crabCfg =copy.deepcopy(tmpCrabCfg)
@@ -244,6 +244,9 @@ class crabProcess(crabDeamonTools.crabDeamon):
     return  self.executeCommand(command,debug ,returnOutput,where=self.crabDir)
     #else:
     #  return  self.executeCommand(command,debug ,returnOutput)
+  def publish(self):
+    self.executeCrabCommand("-publish",debug=True)
+    self.executeCrabCommand("-publish",debug=True) # second time because stupid crab submit forgets last chunk
   def submit(self,debug=False):
     output = self.executeCrabCommand("-status",False,True)
     import re
@@ -429,14 +432,17 @@ class crabProcess(crabDeamonTools.crabDeamon):
       json.dump(tmpDict,jsonMergeLog,indent=2)
     self.updateCrabJson()
     return tmpReturnVal
-  def updateCrabJson(self):
+  def updateCrabJson(self,force=False):
     import json
     oldJson = json.load(open(self.crabJsonFile))
     import datadiff
     diffRes = datadiff.diff(oldJson,self.__dict__)
     if 'delete' in [d[0] for d in diffRes.diffs]:
-      print "information deleted!\n",diffRes
-      return 1
+      print "information deleted!\n",str(diffRes)
+      if not force:
+        return 1
+      else:
+        json.dump(self.__dict__,open(self.crabJsonFile,'w'),indent=2)
     else :
       json.dump(self.__dict__,open(self.crabJsonFile,'w'),indent=2)
       return 0

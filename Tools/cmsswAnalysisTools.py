@@ -1,7 +1,7 @@
 ###
 # run cmssw analysis
 import FWCore.ParameterSet.Config as cms
-import sys,imp,subprocess,os,getopt,re,argparse
+import sys,imp,subprocess,os,re,argparse,copy
 sys.path.extend([os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools/Tools',os.getenv('CMSSW_BASE')+'/MyCMSSWAnalysisTools'])
 import MyDASTools.dasTools as dasTools
 import tools as myTools
@@ -15,7 +15,6 @@ class cmsswAnalysis(object):
      self.samples=samples
      self.timeStamp = coreTools.getTimeStamp()
   def readOpts(self):
-    #opts, args = getopt.getopt(sys.argv[1:], '',['addOptions=','help','runGrid','runParallel=','specificSamples=','dontExec'])
     parser = argparse.ArgumentParser()
     parser.add_argument('--runGrid',action='store_true',default=False,help=' if crab should be called, specific crab arguments can be provided in sample dictionary')
     parser.add_argument('--gridOutputDir',default='test',help=' outputDirectory used for gridJob Output')
@@ -236,6 +235,8 @@ class cmsswAnalysis(object):
             print "test ",crabP.crabCfg
             if crabP.crabCfg.has_key("USER") and crabP.crabCfg.get("USER").has_key('publish_data_name') and not crabP.timeSt in crabP.crabCfg["USER"]['publish_data_name']:
                crabP.crabCfg["USER"]['publish_data_name'] += ('_' if crabP.crabCfg["USER"]['publish_data_name'].endswith('_') else '' ) + crabP.timeSt
+            if crabP.crabCfg.has_key("USER") and crabP.crabCfg.get("USER").has_key('publish_data_name'):
+		crabP.crabCfg["USER"]['publish_data_name'] +=shJ.label
             if self.useCRAB3:
               crabP.writeCrab3Cfg(True,lumiMask=shJ.JSONfileName)
             else:
@@ -282,7 +283,8 @@ class cmsswAnalysis(object):
         print "number of crabs ",len(crabPs)
         for crabP in crabPs:
           if not self.useCRAB3:
-            crabP.create()#executeCrabCommand("-create",debug = True) 
+            crabP.create()#executeCrabCommand("-create",debug = True)
+          crabP.sample = copy.deepcopy(sample.__dict__) 
           CrabTools.saveCrabProp(crabP)
           if not dontExecCrab:
               if self.useCRAB3:
