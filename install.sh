@@ -4,7 +4,7 @@ pkgs=(
   "ParallelizationTools  $CMSSW_BASE ./install.sh"
   "PyRoot_Helpers $HOME"
 )
-cmsswVer=CMSSW_4_2_8_patch7
+cmsswVer=CMSSW_5_3_
 ###################
 function getGitPackage {
 
