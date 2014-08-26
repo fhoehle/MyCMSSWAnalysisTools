@@ -10,7 +10,7 @@ crabCfg = {
     "jobtype":"cmssw"
     ,"scheduler" : "remoteGlidein" #sge
     #,"server_name" : "legnaro"
-    #,"submit_host": "ucsd_submit-6" #cern_vocms20" #"cern_vocms83" # from ~/.cms_crab/0_GET_AvailableServerList
+    ,"submit_host": "ucsd_submit-6" #cern_vocms20" #"cern_vocms83" # from ~/.cms_crab/0_GET_AvailableServerList
     ,"use_server" : 0
     }
   #,"SGE":{
@@ -361,7 +361,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
       print "mergeCfg creation failed"
     return createCfgJob.returncode
    
-  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts="",dontExec=False,useXRootD=False):
+  def doMerging(self,parallel=False,debug=False,where=os.getenv('PWD'),cmsswOpts="",dontExec=False,useXRootD=False,force=False):
     if hasattr(self,'isMerged') and self.isMerged:
       print self.postfix
       print "no merging needed, self.isMerged=True "
@@ -430,7 +430,7 @@ class crabProcess(crabDeamonTools.crabDeamon):
         tmpDict['parallelMerge']=pR.jsonLogFileName
     with open (self.mergeCrabLogJson,'w') as jsonMergeLog:
       json.dump(tmpDict,jsonMergeLog,indent=2)
-    self.updateCrabJson()
+    self.updateCrabJson(force=force)
     return tmpReturnVal
   def updateCrabJson(self,force=False):
     import json
@@ -438,8 +438,8 @@ class crabProcess(crabDeamonTools.crabDeamon):
     import datadiff
     diffRes = datadiff.diff(oldJson,self.__dict__)
     if 'delete' in [d[0] for d in diffRes.diffs]:
-      print "information deleted!\n",str(diffRes)
       if not force:
+        print "information deleted!\n",str(diffRes)
         return 1
       else:
         json.dump(self.__dict__,open(self.crabJsonFile,'w'),indent=2)
@@ -504,8 +504,12 @@ def createCrabSummary(cJs,data=False,alternativeLocation = "crabJobResults.JSON"
   resFile = open(alternativeLocation,"w")
   for c in cJs:
     crabJobResults[c.id]={"publishDatasetName":getCrabJobDatasetname(c)[0],"crabId":c.id}
+    if hasattr(c,'intLuminosity'):
+      print "is data ",c.intLuminosity
+      crabJobResults[c.id]["crabIntLumi"]=c.intLuminosity
     if data:
       crabJobResults[c.id]["crabIntLumi"] = c.reportLumi()
+      print "new calculated Lumi ",crabJobResults[c.id]["crabIntLumi"]
     dasC = dasTools.myDasClient()
     crabJobResults[c.id]["dasNeventsOutput"] = dasC.getNEventsForDataset(crabJobResults[c.id]["publishDatasetName"],addQuery = 'instance=prod/phys03')
     crabJobResults[c.id]["dasNeventsInput"] = dasC.getNEventsForDataset(c.crabCfg["CMSSW"]["datasetpath"],addQuery = 'instance=prod/'+('global' if "prod_global" in c.crabCfg["CMSSW"]["dbs_url"] else 'phys03'))
